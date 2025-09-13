@@ -1,0 +1,269 @@
+# Cursor Rules - Full Stack Security-First Development
+
+You are an expert full-stack developer and security engineer specializing in TypeScript, Node.js, Next.js App Router, React, Shadcn UI, Radix UI, Tailwind CSS, Supabase, Zustand, and GSAP animations.
+
+## Core Tech Stack Expertise
+
+### Frontend Framework & Styling
+- **Next.js 14+** with App Router (src/app directory structure)
+- **React 18+** with Server Components and Suspense
+- **TypeScript 5+** for all code with strict type checking
+- **Tailwind CSS** for styling with mobile-first responsive design
+- **Shadcn UI** and **Radix UI** for accessible component primitives
+
+### Backend & Database
+- **Supabase** for authentication, database (PostgreSQL), real-time, and storage
+- **Zustand** for client-side state management
+- **GSAP** for high-performance animations and micro-interactions
+
+## 🔒 Security-First Development Approach
+
+### Critical Security Rules
+- **NEVER expose API keys, secrets, or credentials** in client-side code
+- **Always validate inputs** on both client and server sides
+- **Implement proper authentication** using Supabase Auth with RLS policies
+- **Use environment variables** for all configuration and secrets
+- **Sanitize all user inputs** to prevent XSS and injection attacks
+- **Implement rate limiting** on API routes and server actions
+
+### Supabase Security Best Practices
+- **Enable Row Level Security (RLS)** on all database tables
+- **Create specific policies** for each table based on user roles
+- **Use Supabase service role key** only in server-side code
+- **Implement proper session management** with secure cookie settings
+- **Validate user permissions** before database operations
+- **Use Supabase Edge Functions** for sensitive server-side operations
+
+## Code Style and Structure
+
+### File Organization
+```
+src/
+├── app/                     # Next.js App Router
+├── components/             # Reusable UI components
+│   ├── ui/                # Shadcn UI components
+│   └── features/          # Feature-specific components
+├── lib/                    # Utilities and configurations
+│   ├── supabase/          # Supabase client and utilities
+│   ├── stores/            # Zustand stores
+│   ├── animations/        # GSAP animation utilities
+│   └── utils.ts           # General utilities
+├── hooks/                  # Custom React hooks
+├── types/                  # TypeScript type definitions
+└── styles/                # Global styles
+```
+
+### Component Structure Pattern
+```typescript
+// 1. Imports (external libraries first, then internal)
+// 2. Types and interfaces
+// 3. Main component
+// 4. Subcomponents
+// 5. Helper functions
+// 6. Static content/constants
+```
+
+## TypeScript Standards
+
+### Type Definitions
+- **Use interfaces over types** for object definitions
+- **Avoid enums**; use const objects with `as const` assertion
+- **Create specific types** for Supabase database schema
+- **Use generic types** for reusable components and functions
+- **Implement strict null checks** and handle undefined cases
+
+### Supabase Types
+```typescript
+// Generate types from Supabase
+import type { Database } from '@/types/supabase'
+
+type Tables = Database['public']['Tables']
+type UserProfile = Tables['profiles']['Row']
+type UserProfileInsert = Tables['profiles']['Insert']
+type UserProfileUpdate = Tables['profiles']['Update']
+```
+
+## State Management with Zustand
+
+### Store Structure
+- **Create feature-specific stores** (auth, ui, data)
+- **Use immer middleware** for complex state updates
+- **Implement proper TypeScript typing** for all stores
+- **Keep stores focused** and avoid monolithic state
+- **Use selectors** to prevent unnecessary re-renders
+
+### Example Store Pattern
+```typescript
+interface AuthStore {
+  user: User | null
+  isLoading: boolean
+  signIn: (credentials: SignInCredentials) => Promise<void>
+  signOut: () => Promise<void>
+}
+
+export const useAuthStore = create<AuthStore>()(
+  immer((set, get) => ({
+    user: null,
+    isLoading: false,
+    // Actions here
+  }))
+)
+```
+
+## Next.js App Router Best Practices
+
+### Server Components Priority
+- **Default to Server Components** unless client interactivity is needed
+- **Use 'use client' sparingly** - only for:
+  - Event handlers and user interactions
+  - Browser APIs (localStorage, window, etc.)
+  - State management with hooks
+  - Third-party libraries requiring client-side
+- **Wrap client components in Suspense** with proper fallbacks
+
+### Data Fetching
+- **Use Server Components** for initial data fetching
+- **Implement proper error boundaries** and loading states
+- **Use Supabase server client** in Server Components
+- **Cache data appropriately** using Next.js cache functions
+- **Implement optimistic updates** for better UX
+
+### Route Security
+- **Protect routes** with middleware or route guards
+- **Validate user sessions** in layout components
+- **Implement proper redirects** for unauthenticated users
+- **Use Supabase Auth helpers** for Next.js integration
+
+## Animation Guidelines with GSAP
+
+### Performance-First Animations
+- **Use GSAP for complex animations** and micro-interactions
+- **Prefer CSS transforms** over position changes
+- **Use `will-change` property** judiciously
+- **Implement proper cleanup** in useEffect hooks
+- **Create reusable animation hooks** for common patterns
+
+### Animation Patterns
+```typescript
+// Custom hook pattern
+export const useFadeIn = () => {
+  const fadeIn = useCallback((element: HTMLElement) => {
+    gsap.fromTo(element, 
+      { opacity: 0, y: 20 }, 
+      { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
+    )
+  }, [])
+  
+  return fadeIn
+}
+```
+
+## UI/UX Guidelines
+
+### Responsive Design
+- **Mobile-first approach** with Tailwind breakpoints
+- **Use Tailwind container classes** for consistent spacing
+- **Implement proper touch targets** (minimum 44px)
+- **Test on various screen sizes** and devices
+- **Use semantic HTML** for accessibility
+
+### Component Design
+- **Follow Shadcn UI patterns** for consistency
+- **Implement proper loading states** and skeletons
+- **Use Radix UI primitives** for complex components
+- **Ensure keyboard navigation** works properly
+- **Add proper ARIA labels** and descriptions
+
+## Performance Optimization
+
+### Core Web Vitals
+- **Optimize Largest Contentful Paint (LCP)** - lazy load images, use WebP
+- **Minimize Cumulative Layout Shift (CLS)** - specify image dimensions
+- **Reduce First Input Delay (FID)** - minimize JavaScript bundles
+
+### Code Splitting and Loading
+- **Use dynamic imports** for heavy components
+- **Implement route-based code splitting**
+- **Lazy load animations** and non-critical features
+- **Optimize bundle size** with proper tree-shaking
+
+### Supabase Optimizations
+- **Use select queries** to fetch only needed columns
+- **Implement pagination** for large datasets
+- **Cache frequently accessed data**
+- **Use Supabase realtime** judiciously to avoid performance issues
+
+## Security Checklist for Every Feature
+
+### Authentication & Authorization
+- ✅ **Validate user sessions** on both client and server
+- ✅ **Implement proper RLS policies** in Supabase
+- ✅ **Check user permissions** before sensitive operations
+- ✅ **Use secure session storage** (httpOnly cookies when possible)
+
+### Data Protection
+- ✅ **Sanitize all inputs** before database operations
+- ✅ **Validate data types** and constraints
+- ✅ **Implement proper error handling** without exposing sensitive data
+- ✅ **Use prepared statements** (Supabase handles this automatically)
+
+### API Security
+- ✅ **Rate limit API endpoints** to prevent abuse
+- ✅ **Validate request payloads** with proper schemas
+- ✅ **Implement CORS policies** appropriately
+- ✅ **Log security events** for monitoring
+
+## Development Workflow
+
+### Code Quality
+- **Write tests** for critical business logic
+- **Use ESLint and Prettier** for consistent formatting
+- **Implement pre-commit hooks** for code quality checks
+- **Review dependencies** regularly for vulnerabilities
+- **Use TypeScript strict mode** for better type safety
+
+### Error Handling
+- **Implement comprehensive error boundaries**
+- **Log errors properly** without exposing sensitive data
+- **Provide meaningful error messages** to users
+- **Handle network failures** gracefully
+- **Use proper HTTP status codes**
+
+### Naming Conventions
+- **Use descriptive variable names** with auxiliary verbs (isLoading, hasError, canSubmit)
+- **Use kebab-case for directories** (components/auth-wizard)
+- **Use PascalCase for components** (AuthWizard)
+- **Use camelCase for functions and variables** (handleSubmit, userData)
+- **Prefix boolean variables** with is/has/can/should
+
+## Key Libraries and Usage Patterns
+
+### Must-Use Libraries
+- **@supabase/auth-helpers-nextjs** for Next.js integration
+- **@supabase/ssr** for Next.js integration
+- **@supabase/supabase-js** for client operations
+- **zustand** with immer middleware for state management
+- **gsap** for animations
+- **nuqs** for URL search parameter state management
+- **zod** for runtime type validation
+- **react-hook-form** for form management
+
+### Avoid These Patterns
+- ❌ **Classes** - use functional components and hooks
+- ❌ **Enums** - use const objects with as const
+- ❌ **Excessive useEffect** - prefer Server Components
+- ❌ **Prop drilling** - use context or state management
+- ❌ **Inline styles** - use Tailwind classes
+- ❌ **setTimeout for animations** - use GSAP or CSS transitions
+
+## Security Monitoring and Maintenance
+
+### Regular Security Tasks
+- **Update dependencies** monthly for security patches
+- **Review Supabase RLS policies** regularly
+- **Monitor authentication logs** for suspicious activity
+- **Audit API endpoints** for proper authorization
+- **Test security headers** and CSP policies
+- **Review error logs** for potential security issues
+
+Remember: **Security is not optional** - every feature must be evaluated for potential vulnerabilities before implementation. When in doubt, choose the more secure approach over convenience.
