@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase'
+import { generalApiRateLimit, createRateLimitHeaders } from '@/lib/rate-limit'
 // Types are available globally from types/index.d.ts
 
 export async function POST(request: NextRequest) {
@@ -9,6 +10,34 @@ export async function POST(request: NextRequest) {
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Rate limiting check
+    const rateLimitResult = await generalApiRateLimit.checkLimit(userId)
+    
+    if (!rateLimitResult.success) {
+      const headers = createRateLimitHeaders(rateLimitResult)
+      return new NextResponse(
+        JSON.stringify({
+          error: 'Rate limit exceeded',
+          retryAfter: rateLimitResult.retryAfter
+        }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            ...headers
+          }
+        }
+      )
+    }
+
+    const contentType = request.headers.get('content-type')
+    if (!contentType?.includes('application/json')) {
+      return NextResponse.json(
+        { error: 'Content-Type must be application/json' },
+        { status: 400 }
+      )
     }
 
     const body = await request.json()

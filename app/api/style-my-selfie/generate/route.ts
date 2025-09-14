@@ -2,13 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { GoogleGenAI } from '@google/genai'
-
-// Rate limiting store (in production, use Redis)
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
-
-// Rate limiting configuration
-const RATE_LIMIT_WINDOW = 60 * 60 * 1000 // 1 hour in milliseconds
-const RATE_LIMIT_MAX_REQUESTS = 15 // 15 requests per hour per user
+import { styleMySelfieRateLimit, createRateLimitHeaders } from '@/lib/rate-limit'
+import { uploadMultipleImagesToStorage } from '@/lib/image-storage'
+import { deductCreditsWithRetry, refundCreditsWithRetry } from '@/lib/credit-management'
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
@@ -16,7 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     // Authentication check with debugging
     const authResult = await auth()
-    console.log('Auth result:', authResult)
+    console.log('Auth userId:', authResult?.userId)
     
     const { userId } = authResult
     if (!userId) {
@@ -27,32 +23,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Rate limiting check
-    const now = Date.now()
-    const userRateLimit = rateLimitStore.get(userId)
+    // Rate limiting check using Redis
+    const rateLimitResult = await styleMySelfieRateLimit.checkLimit(userId)
     
-    if (userRateLimit) {
-      if (now < userRateLimit.resetTime) {
-        if (userRateLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
-          const resetTime = new Date(userRateLimit.resetTime).toISOString()
-          return NextResponse.json(
-            { 
-              error: 'Rate limit exceeded',
-              resetTime,
-              retryAfter: Math.ceil((userRateLimit.resetTime - now) / 1000)
-            },
-            { status: 429 }
-          )
+    if (!rateLimitResult.success) {
+      const headers = createRateLimitHeaders(rateLimitResult)
+      return new NextResponse(
+        JSON.stringify({
+          error: 'Rate limit exceeded',
+          resetTime: new Date(rateLimitResult.resetTime).toISOString(),
+          retryAfter: rateLimitResult.retryAfter
+        }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            ...headers
+          }
         }
-        userRateLimit.count++
-      } else {
-        rateLimitStore.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW })
-      }
-    } else {
-      rateLimitStore.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW })
+      )
     }
 
     // Parse request body
+    const contentType = request.headers.get('content-type')
+    if (!contentType?.includes('application/json')) {
+      return NextResponse.json(
+        { error: 'Content-Type must be application/json' },
+        { status: 400 }
+      )
+    }
+
     const body = await request.json()
     const { prompt, selfieImage, style, additionalDetails } = body
 
@@ -71,10 +71,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate image format
-    if (!selfieImage.startsWith('data:image/')) {
+    // Validate image Data URL (allow jpeg/png/webp only)
+    const m = /^data:(image\/(jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(selfieImage)
+    if (!m) {
       return NextResponse.json(
-        { error: 'Invalid image format. Please upload a valid image.' },
+        { error: 'Invalid image format. Please upload JPEG/PNG/WEBP base64.' },
         { status: 400 }
       )
     }
@@ -94,34 +95,128 @@ export async function POST(request: NextRequest) {
     // Check user credits
     const { data: profile, error: profileError } = await supabase
       .from('users')
-      .select('credits_left, total_credits_used, is_founding_user, user_tier')
+      .select('credits_left, total_credits_used, is_founding_user, user_tier, last_credit_reset')
       .eq('id', userId)
       .single()
 
+    let userProfile = profile
     if (profileError || !profile) {
+      // Initialize new user with default credits
+      console.log(`Creating new user profile for ${userId}`)
+      const { data: newProfile, error: createError } = await supabase
+        .from('users')
+        .insert({
+          id: userId,
+          credits_left: 10, // Default free credits
+          total_credits_used: 0,
+          is_founding_user: false,
+          user_tier: 'free',
+          last_credit_reset: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select('credits_left, total_credits_used, is_founding_user, user_tier, last_credit_reset')
+        .single()
+      
+      if (createError || !newProfile) {
+        console.error('Failed to create user profile:', createError)
+        return NextResponse.json(
+          { error: 'Failed to initialize user profile' },
+          { status: 500 }
+        )
+      }
+      
+      userProfile = newProfile
+      console.log(`User profile created successfully for ${userId} with ${userProfile.credits_left} credits`)
+    }
+
+    if (!userProfile) {
       return NextResponse.json(
-        { error: 'User profile not found' },
-        { status: 404 }
+        { error: 'Failed to get user profile' },
+        { status: 500 }
       )
     }
 
-    if (profile.credits_left <= 0) {
+    // Early credit check for better UX
+    if (userProfile.credits_left <= 0) {
       return NextResponse.json(
         { 
           error: 'No credits remaining',
-          creditsLeft: profile.credits_left,
-          resetTime: profile.last_credit_reset
+          creditsLeft: userProfile.credits_left,
+          resetTime: userProfile.last_credit_reset
         },
         { status: 402 }
       )
     }
 
+    // ATOMICALLY deduct credit BEFORE expensive AI generation with retry logic
+    // This prevents users from getting free generations if something fails
+    const creditResult = await deductCreditsWithRetry({
+      userId,
+      maxRetries: 3,
+      retryDelay: 1000
+    })
+
+    if (!creditResult.success) {
+      if (creditResult.error?.includes('Insufficient credits')) {
+        return NextResponse.json(
+          { 
+            error: 'Insufficient credits',
+            creditsLeft: creditResult.creditsLeft,
+            resetTime: userProfile.last_credit_reset
+          },
+          { status: 402 }
+        )
+      } else {
+        return NextResponse.json(
+          { 
+            error: 'Failed to process credit deduction. Please try again.',
+            creditsLeft: creditResult.creditsLeft
+          },
+          { status: 500 }
+        )
+      }
+    }
+
+    console.log(`Credits deducted for user ${userId}. Remaining: ${creditResult.creditsLeft}`)
+
     // Initialize Gemini AI
     const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
 
-    // Process selfie image
-    const base64Data = selfieImage.split(',')[1]
-    const mimeType = selfieImage.split(';')[0].split(':')[1]
+    // Process selfie image with validated data
+    const mimeType = m[1]
+    const base64Data = m[3]
+    
+    // Validate base64 data length (prevent extremely large payloads)
+    if (base64Data.length > 8 * 1024 * 1024) { // 8MB base64 string limit
+      return NextResponse.json(
+        { error: 'Image data too large. Please use a smaller image.' },
+        { status: 413 }
+      )
+    }
+    
+    // Enforce max size ~6MB (8MB base64)
+    const approxBytes = Math.floor((base64Data.length * 3) / 4)
+    if (approxBytes > 6 * 1024 * 1024) {
+      return NextResponse.json(
+        { 
+          error: 'Image too large. Maximum size is 6MB.',
+          maxSize: '6MB',
+          actualSize: `${Math.round(approxBytes / (1024 * 1024) * 100) / 100}MB`
+        },
+        { status: 413 }
+      )
+    }
+    
+    // Additional validation: check for reasonable image dimensions
+    // This is a rough estimate - very large images might cause memory issues
+    const estimatedPixels = approxBytes / 3 // Rough estimate assuming RGB
+    if (estimatedPixels > 50 * 1024 * 1024) { // 50 megapixels limit
+      return NextResponse.json(
+        { error: 'Image resolution too high. Please use a smaller image.' },
+        { status: 413 }
+      )
+    }
 
     // Enhanced prompt for style my selfie
     let enhancedPrompt = prompt
@@ -235,42 +330,129 @@ IMPORTANT: Incorporate these additional details while maintaining the core style
     console.log(`Generation completed. Generated ${images.length} images out of ${maxAttempts} attempts`)
 
     if (images.length === 0) {
+      // AI generation failed, refund the credit with retry logic
+      console.log(`AI generation failed for user ${userId}, refunding credit`)
+      const refundResult = await refundCreditsWithRetry({
+        userId,
+        maxRetries: 3,
+        retryDelay: 1000
+      })
+      
+      if (!refundResult.success) {
+        console.error('Failed to refund credit after multiple attempts:', refundResult.error)
+        // Log for manual review - user was charged but didn't get service
+        return NextResponse.json(
+          { 
+            error: 'No images were generated. Credit refund failed - please contact support.',
+            creditsLeft: creditResult.creditsLeft
+          },
+          { status: 500 }
+        )
+      }
+      
+      console.log(`Credit refunded for user ${userId}. Remaining: ${refundResult.creditsLeft}`)
       return NextResponse.json(
-        { error: 'No images were generated. Please try a different prompt.' },
+        { 
+          error: 'No images were generated. Please try a different prompt. Credit has been refunded.',
+          creditsLeft: refundResult.creditsLeft
+        },
         { status: 500 }
       )
     }
 
-    // Deduct credit
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ 
-        credits_left: profile.credits_left - 1,
-        total_credits_used: profile.total_credits_used + 1,
-        updated_at: new Date().toISOString()
+    // Upload images to storage and get URLs
+    console.log(`Uploading ${images.length} images to storage...`)
+    const uploadStartTime = Date.now()
+    
+    try {
+      const uploadedImages = await uploadMultipleImagesToStorage(
+        images,
+        prompt,
+        style || 'professional',
+        userId,
+        {
+          additionalDetails: additionalDetails || null,
+          generationTime: Date.now() - startTime,
+          variationCount: images.length
+        }
+      )
+      
+      const uploadTime = Date.now() - uploadStartTime
+      console.log(`Images uploaded to storage in ${uploadTime}ms`)
+      
+      // Extract URLs for response
+      const imageUrls = uploadedImages.map(img => ({
+        id: img.id,
+        url: img.signed_url || img.public_url,
+        storage_path: img.storage_path
+      }))
+
+      // Log generation for analytics
+      const generationTime = Date.now() - startTime
+      console.log(`Style My Selfie generation completed in ${generationTime}ms for user ${userId}`)
+
+      // Get updated rate limit info for headers
+      const updatedRateLimit = await styleMySelfieRateLimit.getRemaining(userId)
+      const headers = createRateLimitHeaders({
+        success: true,
+        limit: 15,
+        remaining: updatedRateLimit,
+        resetTime: Date.now() + (60 * 60 * 1000) // 1 hour from now
       })
-      .eq('id', userId)
 
-    if (updateError) {
-      console.error('Failed to update credits:', updateError)
-      // Don't fail the request, just log the error
-    }
-
-    // Log generation for analytics
-    const generationTime = Date.now() - startTime
-    console.log(`Style My Selfie generation completed in ${generationTime}ms for user ${userId}`)
-
-    // Return success response
-    return NextResponse.json({
-      success: true,
-      images: images,
-      creditsLeft: profile.credits_left - 1,
-      generationTime,
-      metadata: {
-        style: style || 'professional',
-        timestamp: new Date().toISOString()
+      // Return success response with image URLs instead of base64
+      return new NextResponse(
+        JSON.stringify({
+          success: true,
+          images: imageUrls, // Now returns URLs instead of base64
+          creditsLeft: creditResult.creditsLeft,
+          generationTime,
+          uploadTime,
+          metadata: {
+            style: style || 'professional',
+            timestamp: new Date().toISOString(),
+            totalImages: images.length
+          }
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            ...headers
+          }
+        }
+      )
+      
+    } catch (uploadError) {
+      console.error('Failed to upload images to storage:', uploadError)
+      
+      // If upload fails, refund the credit since user didn't get the service
+      const refundResult = await refundCreditsWithRetry({
+        userId,
+        maxRetries: 3,
+        retryDelay: 1000
+      })
+      
+      if (!refundResult.success) {
+        console.error('Failed to refund credit after upload failure:', refundResult.error)
+        return NextResponse.json(
+          { 
+            error: 'Failed to process generated images. Credit refund failed - please contact support.',
+            creditsLeft: creditResult.creditsLeft
+          },
+          { status: 500 }
+        )
       }
-    })
+      
+      console.log(`Credit refunded for user ${userId} due to upload failure. Remaining: ${refundResult.creditsLeft}`)
+      return NextResponse.json(
+        { 
+          error: 'Failed to process generated images. Credit has been refunded.',
+          creditsLeft: refundResult.creditsLeft
+        },
+        { status: 500 }
+      )
+    }
 
   } catch (error) {
     console.error('Style My Selfie generation error:', error)

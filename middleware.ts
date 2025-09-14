@@ -1,6 +1,26 @@
-import { clerkMiddleware } from '@clerk/nextjs/server'
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
 
-export default clerkMiddleware()
+const isPublicRoute = createRouteMatcher([
+  '/',
+  '/sign-in',
+  '/sign-up',
+  '/api/public(.*)',
+  '/_next(.*)',
+  '/static(.*)'
+])
+
+export default clerkMiddleware(
+  async (auth, req) => {
+    // Allow CORS preflight requests
+    if (req.method === 'OPTIONS') {
+      return NextResponse.next()
+    }
+    if (!isPublicRoute(req)) {
+      await auth.protect()
+    }
+  }
+)
 
 export const config = {
   matcher: [

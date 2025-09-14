@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { createServiceRoleClient } from '@/lib/supabase'
+import { generalApiRateLimit, createRateLimitHeaders } from '@/lib/rate-limit'
 
 export async function GET() {
   try {
@@ -8,6 +9,26 @@ export async function GET() {
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Rate limiting check
+    const rateLimitResult = await generalApiRateLimit.checkLimit(userId)
+    
+    if (!rateLimitResult.success) {
+      const headers = createRateLimitHeaders(rateLimitResult)
+      return new NextResponse(
+        JSON.stringify({
+          error: 'Rate limit exceeded',
+          retryAfter: rateLimitResult.retryAfter
+        }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            ...headers
+          }
+        }
+      )
     }
 
     const supabase = createServiceRoleClient()

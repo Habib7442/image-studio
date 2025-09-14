@@ -48,6 +48,8 @@ export interface GenerationMode {
   category: 'fun' | 'professional'
 }
 
+export type ActiveMode = GenerationMode['id'] | null
+
 // API Response Types
 export interface ApiResponse<T = any> {
   success: boolean

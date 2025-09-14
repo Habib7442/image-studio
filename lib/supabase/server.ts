@@ -1,19 +1,26 @@
+import 'server-only'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { auth } from '@clerk/nextjs/server'
+import type { Database } from './types'
 
-export const createClient = async () => {
+export const createClient = async (): Promise<ReturnType<typeof createServerClient<Database>>> => {
   const cookieStore = await cookies()
   const { getToken } = await auth()
   const token = await getToken()
 
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !anonKey) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY')
+  }
+  return createServerClient<Database>(
+    url,
+    anonKey,
     {
       global: {
         headers: {
-          Authorization: token ? `Bearer ${token}` : '',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       },
       cookies: {
@@ -44,10 +51,15 @@ export const createClient = async () => {
 }
 
 // Service role client for server-side operations that need elevated privileges
-export const createServiceRoleClient = () => {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!, // Service role key for server-side operations
+export const createServiceRoleClient = (): ReturnType<typeof createServerClient<Database>> => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !serviceKey) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
+  }
+  return createServerClient<Database>(
+    url,
+    serviceKey, // Service role key for server-side operations
     {
       cookies: {
         get() {

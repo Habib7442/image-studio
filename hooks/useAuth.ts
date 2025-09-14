@@ -49,8 +49,13 @@ export function useAuth() {
         throw new Error('Failed to fetch user profile')
       }
 
-      const data = await response.json()
-      setProfile(data.profile)
+      const isJson = response.headers.get('content-type')?.includes('application/json')
+      const data = isJson ? await response.json() : await response.text()
+      if (isJson) {
+        setProfile(data.profile)
+      } else {
+        throw new Error('Invalid response format')
+      }
     } catch (error) {
       console.error('Error fetching user profile:', error)
       setProfileError(error instanceof Error ? error.message : 'Unknown error')

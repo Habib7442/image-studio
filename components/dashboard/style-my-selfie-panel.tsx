@@ -10,18 +10,20 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { 
-  Upload, 
-  Camera, 
-  Sparkles, 
-  Download, 
+import {
+  Upload,
+  Camera,
+  Sparkles,
+  Download,
   RefreshCw,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Wand2
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { STYLE_TEMPLATES, TEMPLATE_CATEGORIES, STYLE_TEMPLATE_CATEGORIES } from '@/lib/style-templates'
 import { useStyleMySelfieStore } from '@/store/style-myselfie-store'
+import { EffectsPanel } from './effects-panel'
 
 export function StyleMySelfiePanel() {
   const { profile } = useAuth()
@@ -73,9 +75,15 @@ export function StyleMySelfiePanel() {
       setError('Please upload a valid image file')
       return
     }
+    
+    // Reject SVG explicitly
+    if (file.type === 'image/svg+xml') {
+      setError('SVG images are not supported')
+      return
+    }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (max 6MB)
+    if (file.size > 6 * 1024 * 1024) {
       setShowSizeAlert(true)
       return
     }
@@ -107,11 +115,10 @@ export function StyleMySelfiePanel() {
 
     // Simulate progress updates
     const progressInterval = setInterval(() => {
-      setGenerationProgress(prev => {
-        const currentProgress = prev || 0
-        if (currentProgress >= 90) return currentProgress // Don't go to 100% until we get the response
-        return Math.min(currentProgress + Math.random() * 10, 90)
-      })
+      const current = useStyleMySelfieStore.getState().generationProgress || 0
+      if (current < 90) {
+        setGenerationProgress(Math.min(current + Math.random() * 10, 90))
+      }
     }, 500)
 
     try {
@@ -128,10 +135,11 @@ export function StyleMySelfiePanel() {
         }),
       })
 
-      const data = await response.json()
-
+      const isJson = response.headers.get('content-type')?.includes('application/json')
+      const data = isJson ? await response.json() : await response.text()
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate image')
+        const message = isJson ? (data as { error?: string })?.error : String(data)
+        throw new Error(message || 'Failed to generate image')
       }
 
       // Set progress to 100% when we get the response
@@ -146,13 +154,24 @@ export function StyleMySelfiePanel() {
     }
   }
 
-  const handleDownload = (imageUrl: string, index: number) => {
-    const link = document.createElement('a')
-    link.href = imageUrl
-    link.download = `styled-selfie-${index + 1}-${Date.now()}.jpeg`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+  const handleDownload = async (imageUrl: string, index: number) => {
+    try {
+      // Verify the image is still accessible
+      const response = await fetch(imageUrl)
+      if (!response.ok) {
+        throw new Error('Image not accessible')
+      }
+      
+      const link = document.createElement('a')
+      link.href = imageUrl
+      link.download = `styled-selfie-${index + 1}-${Date.now()}.jpeg`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (err) {
+      console.error('Failed to download image:', err)
+      setError('Failed to download image. Please try again.')
+    }
   }
 
   const handleReset = () => {
@@ -419,9 +438,9 @@ export function StyleMySelfiePanel() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Progress</span>
-                <span>{Math.round(generationProgress || 0)}%</span>
+                <span>{Math.round(Math.max(0, Math.min(100, generationProgress || 0)))}%</span>
               </div>
-              <Progress value={generationProgress || 0} className="w-full" />
+              <Progress value={Math.max(0, Math.min(100, generationProgress || 0))} className="w-full" />
             </div>
           </CardContent>
         </Card>
@@ -442,10 +461,10 @@ export function StyleMySelfiePanel() {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {result.images.map((image, index) => (
-                <div key={index} className="space-y-3">
+                <div key={image.id} className="space-y-3">
                   <div className="relative">
                     <img
-                      src={image}
+                      src={image.url}
                       alt={`Generated styled selfie ${index + 1}`}
                       className="w-full rounded-lg shadow-lg"
                     />
@@ -454,7 +473,7 @@ export function StyleMySelfiePanel() {
                     </div>
                   </div>
                   <Button 
-                    onClick={() => handleDownload(image, index)} 
+                    onClick={() => handleDownload(image.url, index)} 
                     variant="outline" 
                     className="w-full"
                   >
@@ -479,12 +498,43 @@ export function StyleMySelfiePanel() {
               </div>
             </div>
 
-            <div className="text-center text-sm text-muted-foreground">
-              Credits remaining: {result.creditsLeft}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                        <div className="text-center text-sm text-muted-foreground">
+                          Credits remaining: {result.creditsLeft}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Effects Panel */}
+                  {result && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Wand2 className="h-5 w-5 text-purple-500" />
+                          Apply Effects
+                        </CardTitle>
+                        <CardDescription>
+                          Enhance your generated images with creative effects like blur, filters, and frames
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <EffectsPanel
+                          images={result.images.map(img => img.url)}
+                          onImageUpdate={(imageId, processedImage) => {
+                            // Update the result with processed image
+                            setResult({
+                              ...result,
+                              images: result.images.map((img, index) =>
+                                `image-${index}` === imageId 
+                                  ? { ...img, url: processedImage }
+                                  : img
+                              )
+                            })
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
 
       {/* File Size Alert Dialog */}
       <AlertDialog open={showSizeAlert} onOpenChange={setShowSizeAlert}>
@@ -495,9 +545,9 @@ export function StyleMySelfiePanel() {
               File Too Large
             </AlertDialogTitle>
             <AlertDialogDescription>
-              The image you selected is larger than 5MB. Please choose a smaller image or compress it before uploading.
+              The image you selected is larger than 6MB. Please choose a smaller image or compress it before uploading.
               <br /><br />
-              <strong>Maximum file size:</strong> 5MB
+              <strong>Maximum file size:</strong> 6MB
               <br />
               <strong>Recommended:</strong> Use images under 2MB for best performance.
             </AlertDialogDescription>

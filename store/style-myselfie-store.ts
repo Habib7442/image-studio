@@ -1,14 +1,22 @@
 import { create } from 'zustand'
-import { devtools } from 'zustand/middleware'
+import { devtools, persist } from 'zustand/middleware'
 import { StyleTemplate } from '@/lib/style-templates'
 
+interface GeneratedImage {
+  id: string
+  url: string
+  storage_path: string
+}
+
 interface GenerationResult {
-  images: string[]
+  images: GeneratedImage[] // Now contains image objects with URLs
   creditsLeft: number
   generationTime: number
+  uploadTime?: number
   metadata: {
     style: string
     timestamp: string
+    totalImages?: number
   }
 }
 
@@ -51,7 +59,7 @@ interface StyleMySelfieState {
   
   // Actions
   reset: () => void
-  handleTemplateSelect: (template: StyleTemplate) => void
+  handleTemplateSelect: (template: StyleTemplate | null) => void
   handleSurpriseMe: (templates: StyleTemplate[]) => void
   getEffectivePrompt: () => string
   canGenerate: () => boolean
@@ -71,7 +79,8 @@ const initialState = {
 
 export const useStyleMySelfieStore = create<StyleMySelfieState>()(
   devtools(
-    (set, get) => ({
+    persist(
+      (set, get) => ({
       ...initialState,
       
       // Image actions
@@ -102,7 +111,7 @@ export const useStyleMySelfieStore = create<StyleMySelfieState>()(
       setShowSizeAlert: (show) => set({ showSizeAlert: show }, false, 'setShowSizeAlert'),
       
       // Complex actions
-      reset: () => set(initialState, false, 'reset'),
+      reset: () => set(() => ({ ...initialState }), false, 'reset'),
       
       handleTemplateSelect: (template) => {
         set({ 
@@ -113,11 +122,16 @@ export const useStyleMySelfieStore = create<StyleMySelfieState>()(
       },
       
       handleSurpriseMe: (templates) => {
-        const randomTemplate = templates[Math.floor(Math.random() * templates.length)]
-        set({ 
+        if (!templates || templates.length === 0) {
+          set({ selectedTemplate: null, error: 'No templates available' }, false, 'handleSurpriseMe:empty')
+          return
+        }
+        const idx = Math.floor(Math.random() * templates.length)
+        const randomTemplate = templates[idx]
+        set({
           selectedTemplate: randomTemplate,
           customPrompt: '',
-          error: null 
+          error: null
         }, false, 'handleSurpriseMe')
       },
       
@@ -133,7 +147,22 @@ export const useStyleMySelfieStore = create<StyleMySelfieState>()(
         const state = get()
         return !!(state.selectedImage && (state.selectedTemplate || state.customPrompt.trim()))
       }
-    }),
+      }),
+      {
+        name: 'style-myselfie-storage',
+        partialize: (state) => ({
+          selectedTemplate: state.selectedTemplate,
+          selectedCategory: state.selectedCategory,
+          customPrompt: state.customPrompt,
+        }),
+        version: 1,
+        migrate: (persistedState, version) => {
+          // No migrations yet - version parameter reserved for future use
+          console.log(`Migrating from version ${version} to version 1`)
+          return persistedState as StyleMySelfieState
+        },
+      }
+    ),
     {
       name: 'style-myselfie-store',
     }

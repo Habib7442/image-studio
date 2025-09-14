@@ -5,19 +5,25 @@ import { Sidebar, SidebarContent, SidebarHeader, SidebarGroup, SidebarGroupLabel
 import { ModeToggle } from '@/components/dashboard/mode-toggle'
 import { funGenerationModes, professionalGenerationModes } from '@/lib/data'
 
+type CanvasMode = 'canvas' | 'style-myselfie'
+
 interface DashboardSidebarProps {
-  onModeSelect?: (modeId: string) => void
+  onModeSelect?: (modeId: CanvasMode) => void
 }
 
 export function DashboardSidebar({ onModeSelect }: DashboardSidebarProps) {
   const [activeMode, setActiveMode] = useState<'fun' | 'professional'>('fun')
-  const [selectedMode, setSelectedMode] = useState<string | null>(null)
+  const [selectedMode, setSelectedMode] = useState<CanvasMode | null>(null)
 
   const currentModes = activeMode === 'fun' ? funGenerationModes : professionalGenerationModes
 
   const handleModeSelect = (modeId: string) => {
-    setSelectedMode(modeId)
-    onModeSelect?.(modeId)
+    // Only allow canvas modes to be selected
+    if (modeId === 'style-myselfie' || modeId === 'canvas') {
+      const canvasMode = modeId as CanvasMode
+      setSelectedMode(canvasMode)
+      onModeSelect?.(canvasMode)
+    }
   }
 
   return (
