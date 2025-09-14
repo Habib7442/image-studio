@@ -5,11 +5,20 @@ import { Sidebar, SidebarContent, SidebarHeader, SidebarGroup, SidebarGroupLabel
 import { ModeToggle } from '@/components/dashboard/mode-toggle'
 import { funGenerationModes, professionalGenerationModes } from '@/lib/data'
 
-export function DashboardSidebar() {
+interface DashboardSidebarProps {
+  onModeSelect?: (modeId: string) => void
+}
+
+export function DashboardSidebar({ onModeSelect }: DashboardSidebarProps) {
   const [activeMode, setActiveMode] = useState<'fun' | 'professional'>('fun')
   const [selectedMode, setSelectedMode] = useState<string | null>(null)
 
   const currentModes = activeMode === 'fun' ? funGenerationModes : professionalGenerationModes
+
+  const handleModeSelect = (modeId: string) => {
+    setSelectedMode(modeId)
+    onModeSelect?.(modeId)
+  }
 
   return (
     <Sidebar className="w-64">
@@ -29,7 +38,7 @@ export function DashboardSidebar() {
                 <SidebarMenuItem key={mode.id}>
                   <SidebarMenuButton 
                     asChild
-                    onClick={() => setSelectedMode(mode.id)}
+                    onClick={() => handleModeSelect(mode.id)}
                     className={selectedMode === mode.id ? 'bg-sidebar-accent' : ''}
                   >
                     <button className="flex items-center gap-4 w-full px-4 py-6 rounded-lg">

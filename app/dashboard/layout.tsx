@@ -2,18 +2,16 @@
 
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
+import { CanvasArea } from '@/components/dashboard/canvas-area'
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function DashboardLayout() {
   const { isLoaded, isSignedIn, isProfileLoading, profileError } = useAuth()
   const router = useRouter()
+  const [selectedMode, setSelectedMode] = useState<string | null>(null)
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -66,11 +64,11 @@ export default function DashboardLayout({
         {/* Main Content */}
         <div className="flex flex-1 overflow-hidden w-full min-w-0">
           {/* Left Sidebar */}
-          <DashboardSidebar />
+          <DashboardSidebar onModeSelect={setSelectedMode} />
           
           {/* Center Canvas Area - Full Width */}
           <main className="flex-1 flex flex-col overflow-hidden w-full min-w-0">
-            {children}
+            <CanvasArea activeMode={selectedMode} />
           </main>
         </div>
       </div>

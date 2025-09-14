@@ -3,7 +3,6 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ClerkProvider } from '@clerk/nextjs';
-import { ClerkErrorBoundary } from '@/components/clerk-error-boundary';
 import { ConditionalFooter } from '@/components/conditional-footer';
 
 const inter = Inter({
@@ -47,8 +46,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ClerkErrorBoundary>
-                   <ClerkProvider
+          <ClerkProvider
                      appearance={{
                        variables: {
                          colorPrimary: 'hsl(var(--primary))',
@@ -90,7 +88,6 @@ export default function RootLayout({
               {children}
               <ConditionalFooter />
             </ClerkProvider>
-          </ClerkErrorBoundary>
         </ThemeProvider>
       </body>
     </html>
