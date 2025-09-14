@@ -12,12 +12,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Menu, X, Sun, Moon, Sparkles, User, LogOut } from 'lucide-react'
+import { Menu, X, Sun, Moon, Sparkles } from 'lucide-react'
+import { UserButton, useUser } from '@clerk/nextjs'
+import { ClerkLoginButton } from '@/components/auth/clerk-login-button'
 
 export function Navigation() {
   const [mounted, setMounted] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { theme, setTheme } = useTheme()
+  const { isSignedIn, isLoaded } = useUser()
 
   useEffect(() => {
     setMounted(true)
@@ -102,14 +105,44 @@ export function Navigation() {
 
             {/* Auth buttons */}
             <div className="hidden sm:flex items-center space-x-2">
-              <Button variant="ghost" size="sm">
-                <User className="w-4 h-4 mr-2" />
-                Sign In
-              </Button>
-              <Button size="sm">
-                <Sparkles className="w-4 h-4 mr-2" />
-                Get Started
-              </Button>
+              {isLoaded ? (
+                <>
+                  {isSignedIn ? (
+                    <div className="flex items-center space-x-2">
+                      <Link href="/dashboard">
+                        <Button variant="outline" size="sm">
+                          Dashboard
+                        </Button>
+                      </Link>
+                      <UserButton 
+                        appearance={{
+                          elements: {
+                            avatarBox: "w-8 h-8"
+                          }
+                        }}
+                        afterSignOutUrl="/"
+                        showName={true}
+                        userProfileMode="modal"
+                      />
+                    </div>
+                  ) : (
+                    <ClerkLoginButton 
+                      variant="ghost" 
+                      size="sm" 
+                      mode="signin"
+                      showTermsConsent={true}
+                    />
+                  )}
+                </>
+              ) : (
+                // Fallback when Clerk is not loaded - still use ClerkLoginButton
+                <ClerkLoginButton 
+                  variant="ghost" 
+                  size="sm" 
+                  mode="signin"
+                  showTermsConsent={true}
+                />
+              )}
             </div>
 
             {/* Mobile menu button */}
@@ -158,14 +191,48 @@ export function Navigation() {
               </nav>
 
               <div className="space-y-2 pt-4 border-t">
-                <Button variant="ghost" size="sm" className="w-full justify-start">
-                  <User className="w-4 h-4 mr-2" />
-                  Sign In
-                </Button>
-                <Button size="sm" className="w-full">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Get Started
-                </Button>
+                {isLoaded ? (
+                  <>
+                    {isSignedIn ? (
+                      <>
+                        <Link href="/dashboard">
+                          <Button variant="outline" size="sm" className="w-full">
+                            Dashboard
+                          </Button>
+                        </Link>
+                        <div className="flex justify-center">
+                          <UserButton 
+                            appearance={{
+                              elements: {
+                                avatarBox: "w-8 h-8"
+                              }
+                            }}
+                            afterSignOutUrl="/"
+                            showName={true}
+                            userProfileMode="modal"
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <ClerkLoginButton 
+                        variant="ghost" 
+                        size="sm" 
+                        mode="signin"
+                        showTermsConsent={true}
+                        className="w-full justify-start"
+                      />
+                    )}
+                  </>
+                ) : (
+                  // Fallback when Clerk is not loaded - still use ClerkLoginButton
+                  <ClerkLoginButton 
+                    variant="ghost" 
+                    size="sm" 
+                    mode="signin"
+                    showTermsConsent={true}
+                    className="w-full justify-start"
+                  />
+                )}
               </div>
             </div>
           </div>

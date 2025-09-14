@@ -1,10 +1,4 @@
-export interface GenerationMode {
-  id: string;
-  title: string;
-  icon: string;
-  description: string;
-  category: 'fun' | 'professional';
-}
+import type { GenerationMode } from '@/types'
 
 export const funGenerationModes: GenerationMode[] = [
   {

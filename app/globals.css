@@ -207,4 +207,85 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Clerk UserButton text visibility fixes - More specific selectors */
+  .cl-userButtonPopoverActionButton {
+    color: white !important;
+  }
+
+  .cl-userButtonPopoverActionButtonText {
+    color: white !important;
+    font-weight: 500 !important;
+  }
+
+  .cl-userButtonPopoverActionButtonIcon {
+    color: white !important;
+  }
+
+  /* Specific styling for sign out button */
+  .cl-userButtonPopoverActionButton[data-clerk-user-button-popover-action-button__signOut] {
+    color: white !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .cl-userButtonPopoverActionButton[data-clerk-user-button-popover-action-button__signOut]:hover {
+    background-color: rgba(239, 68, 68, 0.2) !important;
+    color: rgb(248, 113, 113) !important;
+  }
+
+  /* Alternative selectors for Clerk components */
+  [data-clerk-user-button-popover] .cl-userButtonPopoverActionButton {
+    color: white !important;
+  }
+
+  [data-clerk-user-button-popover] .cl-userButtonPopoverActionButtonText {
+    color: white !important;
+    font-weight: 500 !important;
+  }
+
+  [data-clerk-user-button-popover] .cl-userButtonPopoverActionButtonIcon {
+    color: white !important;
+  }
+
+  /* Force visibility for all text elements in user popover */
+  [data-clerk-user-button-popover] * {
+    color: white !important;
+  }
+
+  [data-clerk-user-button-popover] button {
+    color: white !important;
+  }
+
+  [data-clerk-user-button-popover] span {
+    color: white !important;
+  }
+
+  /* Additional aggressive selectors for Clerk user button */
+  .cl-userButtonPopoverCard * {
+    color: white !important;
+  }
+
+  .cl-userButtonPopoverCard button {
+    color: white !important;
+  }
+
+  .cl-userButtonPopoverCard span {
+    color: white !important;
+  }
+
+  /* Target specific Clerk classes */
+  .cl-userButtonPopoverActionButton,
+  .cl-userButtonPopoverActionButtonText,
+  .cl-userButtonPopoverActionButtonIcon {
+    color: white !important;
+  }
+
+  /* Force all text in popover to be white */
+  [data-clerk-user-button-popover] div,
+  [data-clerk-user-button-popover] p,
+  [data-clerk-user-button-popover] a,
+  [data-clerk-user-button-popover] button,
+  [data-clerk-user-button-popover] span {
+    color: white !important;
+  }
 }

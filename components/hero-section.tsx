@@ -3,12 +3,14 @@
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
 import { Carousel_006 } from '@/components/ui/carousel-006'
-import { Play, ArrowRight, Sparkles, Shield, Clock, Zap } from 'lucide-react'
-import { useState } from 'react'
+import { Play, Sparkles, Shield, Clock, Zap, Camera } from 'lucide-react'
+import { ClerkLoginButton } from '@/components/auth/clerk-login-button'
+import { useUser } from '@clerk/nextjs'
 
 export function HeroSection() {
+  const { isSignedIn } = useUser()
+  
   const carouselImages = [
     {
       src: "/landing-assets/1.jpg",
@@ -53,19 +55,21 @@ export function HeroSection() {
       <div className="absolute inset-0 z-0">
         <div className="flex w-full h-full">
           <div className="relative flex-1">
-            <Image
-              src="/landing-assets/hero_2.png"
-              alt="Hero Background 2"
-              fill
-              className="object-contain opacity-20"
-              priority
-            />
+                  <Image
+                    src="/landing-assets/hero_2.png"
+                    alt="Hero Background 2"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-contain opacity-20"
+                    priority
+                  />
           </div>
           <div className="relative flex-1 hidden sm:block">
             <Image
               src="/landing-assets/hero_3.png"
               alt="Hero Background 3"
               fill
+              sizes="(max-width: 768px) 0vw, 33vw"
               className="object-contain opacity-20"
               priority
             />
@@ -75,6 +79,7 @@ export function HeroSection() {
               src="/landing-assets/hero_4.png"
               alt="Hero Background 4"
               fill
+              sizes="(max-width: 768px) 0vw, 33vw"
               className="object-contain opacity-20"
               priority
             />
@@ -110,25 +115,37 @@ export function HeroSection() {
             </p>
           </div>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Button 
-              size="lg" 
-              className="px-8 py-4 text-lg font-semibold rounded-full"
-            >
-              <Sparkles className="w-5 h-5 mr-2 text-white" />
-              <span className="text-white">Start Creating</span>
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="px-8 py-4 text-lg font-semibold rounded-full"
-            >
-              <Play className="w-5 h-5 mr-2" />
-              Watch Demo
-            </Button>
-          </div>
+                {/* CTA Buttons */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  {isSignedIn ? (
+                    <Button
+                      size="lg"
+                      className="px-8 py-4 text-lg font-semibold rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                    >
+                      <Camera className="w-5 h-5 mr-2" />
+                      <span>Create your first photoshoot</span>
+                    </Button>
+                  ) : (
+                    <ClerkLoginButton
+                      size="lg"
+                      mode="signup"
+                      showTermsConsent={true}
+                      className="px-8 py-4 text-lg font-semibold rounded-full"
+                    >
+                      <Sparkles className="w-5 h-5 mr-2 text-white" />
+                      <span className="text-white">Start Creating</span>
+                    </ClerkLoginButton>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="px-8 py-4 text-lg font-semibold rounded-full"
+                  >
+                    <Play className="w-5 h-5 mr-2" />
+                    Watch Demo
+                  </Button>
+                </div>
 
           {/* Credits Info */}
           <div className="flex items-center space-x-6 text-sm text-muted-foreground">
@@ -148,8 +165,8 @@ export function HeroSection() {
               images={carouselImages}
               className=""
               loop={true}
-              showNavigation={true}
-              showPagination={true}
+              showNavigation={false}
+              showPagination={false}
             />
           </div>
         </div>
