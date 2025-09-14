@@ -189,12 +189,12 @@
     letter-spacing: var(--tracking-normal);
     font-family: var(--font-inter), Inter, sans-serif;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-poppins), Poppins, sans-serif;
     font-weight: 700;
   }
-  
+
   .font-display {
     font-family: var(--font-poppins), Poppins, sans-serif;
   }
@@ -203,7 +203,7 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }

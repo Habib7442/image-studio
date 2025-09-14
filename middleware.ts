@@ -1,26 +1,6 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
-import { NextResponse } from 'next/server'
+import { clerkMiddleware } from '@clerk/nextjs/server'
 
-const isPublicRoute = createRouteMatcher([
-  '/',
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-  '/api/redis/health',
-  // Legal pages - should be publicly accessible
-  '/privacy',
-  '/terms',
-  '/cookie-policy',
-  '/gdpr'
-  // All other API routes require authentication
-])
-
-export default clerkMiddleware(
-  async (auth, req) => {
-    if (!isPublicRoute(req)) {
-      await auth.protect()
-    }
-  }
-)
+export default clerkMiddleware()
 
 export const config = {
   matcher: [

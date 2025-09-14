@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Footer } from "@/components/footer";
 import { ClerkProvider } from '@clerk/nextjs';
 import { ClerkErrorBoundary } from '@/components/clerk-error-boundary';
+import { ConditionalFooter } from '@/components/conditional-footer';
 
 const inter = Inter({
   variable: "--font-inter",
@@ -88,7 +88,7 @@ export default function RootLayout({
                      }}
             >
               {children}
-              <Footer />
+              <ConditionalFooter />
             </ClerkProvider>
           </ClerkErrorBoundary>
         </ThemeProvider>

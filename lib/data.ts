@@ -67,25 +67,4 @@ export const professionalGenerationModes: GenerationMode[] = [
     description: 'Professional headshot generation',
     category: 'professional'
   },
-  {
-    id: 'wedding-photoshoot',
-    title: 'Wedding Photoshoots',
-    icon: '💒',
-    description: 'Professional wedding photography',
-    category: 'professional'
-  },
-  {
-    id: 'corporate-photoshoot',
-    title: 'Corporate Photoshoots',
-    icon: '🏢',
-    description: 'Business and corporate photography',
-    category: 'professional'
-  },
-  {
-    id: 'portrait-photography',
-    title: 'Portrait Photography',
-    icon: '📷',
-    description: 'Professional portrait sessions',
-    category: 'professional'
-  }
 ];

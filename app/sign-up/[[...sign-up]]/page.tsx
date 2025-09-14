@@ -46,8 +46,8 @@ export default function Page() {
                        formFieldErrorText: "text-red-400"
                      }
                    }}
-            fallbackRedirectUrl="/"
-            signInFallbackRedirectUrl="/"
+            fallbackRedirectUrl="/dashboard"
+            signInFallbackRedirectUrl="/dashboard"
           />
         </div>
 
