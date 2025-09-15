@@ -70,7 +70,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <DashboardSidebar onModeSelect={setSelectedMode} />
           
           {/* Center Content Area - Full Width */}
-          <main className="flex-1 flex flex-col overflow-hidden w-full min-w-0">
+          <main className="flex-1 flex flex-col overflow-y-auto w-full min-w-0">
             {selectedMode ? (
               <CanvasArea activeMode={selectedMode} />
             ) : (

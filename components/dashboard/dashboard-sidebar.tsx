@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Sidebar, SidebarContent, SidebarHeader, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar'
 import { ModeToggle } from '@/components/dashboard/mode-toggle'
 import { funGenerationModes, professionalGenerationModes } from '@/lib/data'
-import { Database, Settings } from 'lucide-react'
+import { Database } from 'lucide-react'
 
 type CanvasMode = 'canvas' | 'style-myselfie'
 

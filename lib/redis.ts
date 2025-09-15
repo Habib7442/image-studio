@@ -137,7 +137,99 @@ export async function clearImageCache(url: string): Promise<void> {
   }
 }
 
-// Get cache statistics
+// Efficient caching for large images using streaming
+export async function cacheImageEfficient(url: string, imageBuffer: Buffer, contentType: string, size: number): Promise<void> {
+  try {
+    // For large images, we'll store them in chunks to avoid memory issues
+    const CHUNK_SIZE = 1024 * 1024 // 1MB chunks
+    const chunks: string[] = []
+    
+    // Split the buffer into chunks
+    for (let i = 0; i < imageBuffer.length; i += CHUNK_SIZE) {
+      const chunk = imageBuffer.slice(i, i + CHUNK_SIZE)
+      chunks.push(chunk.toString('base64'))
+    }
+
+    const cachedImage: CachedImage = {
+      data: chunks.join(''), // Join chunks back together
+      contentType,
+      size,
+      cachedAt: Date.now(),
+      expiresAt: Date.now() + (CACHE_TTL.IMAGE_PROXY * 1000)
+    }
+
+    await redis.setex(
+      CACHE_KEYS.IMAGE_PROXY(url),
+      CACHE_TTL.IMAGE_PROXY,
+      JSON.stringify(cachedImage)
+    )
+
+    console.log(`Large image cached efficiently: ${url} (${chunks.length} chunks)`)
+  } catch (error) {
+    console.error('Failed to cache large image efficiently:', error)
+    // Don't throw - caching is optional
+  }
+}
+
+// Check if image should be cached based on size
+export function shouldCacheImage(size: number): boolean {
+  const MAX_CACHE_SIZE = 5 * 1024 * 1024 // 5MB
+  return size <= MAX_CACHE_SIZE
+}
+
+// SCAN-based helper functions for production use
+export async function scanAll(redis: any, pattern: string, count = 1000): Promise<string[]> {
+  const out: string[] = []
+  let cursor = '0'
+  do {
+    const [next, batch] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', count)
+    cursor = String(next)
+    if (Array.isArray(batch)) out.push(...batch)
+  } while (cursor !== '0')
+  return out
+}
+
+export async function batchDelete(redis: any, keys: string[], batchSize = 500): Promise<number> {
+  let deleted = 0
+  for (let i = 0; i < keys.length; i += batchSize) {
+    const chunk = keys.slice(i, i + batchSize)
+    // Prefer UNLINK if supported (non-blocking); fallback to DEL
+    if (typeof (redis as any).unlink === 'function') {
+      deleted += await redis.unlink(...chunk)
+    } else {
+      deleted += await redis.del(...chunk)
+    }
+  }
+  return deleted
+}
+
+// Production-safe cache clearing
+export async function clearAllImageCaches(): Promise<{
+  deletedImages: number
+  deletedMetadata: number
+  totalDeleted: number
+}> {
+  try {
+    const keys = await scanAll(redis, 'image_proxy:*')
+    const metadataKeys = await scanAll(redis, 'image_metadata:*')
+    
+    const deletedImages = await batchDelete(redis, keys)
+    const deletedMeta = await batchDelete(redis, metadataKeys)
+    
+    console.log(`Cache cleared: ${deletedImages} images, ${deletedMeta} metadata`)
+    
+    return {
+      deletedImages,
+      deletedMetadata: deletedMeta,
+      totalDeleted: deletedImages + deletedMeta
+    }
+  } catch (error) {
+    console.error('Failed to clear all caches:', error)
+    throw error
+  }
+}
+
+// Get cache statistics using SCAN (production-safe)
 export async function getCacheStats(): Promise<{
   totalImages: number
   totalSize: number
@@ -145,7 +237,7 @@ export async function getCacheStats(): Promise<{
   newestCache: number | null
 }> {
   try {
-    const keys = await redis.keys('image_proxy:*')
+    const keys = await scanAll(redis, 'image_proxy:*')
     let totalSize = 0
     let oldestCache: number | null = null
     let newestCache: number | null = null

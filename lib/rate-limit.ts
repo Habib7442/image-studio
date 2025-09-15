@@ -111,6 +111,18 @@ export const generalApiRateLimit = new RateLimiter({
   keyPrefix: 'rate_limit:general_api'
 })
 
+export const imageProxyRateLimit = new RateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  maxRequests: 30, // 30 requests per minute
+  keyPrefix: 'rate_limit:image_proxy'
+})
+
+export const imageProxyStrictRateLimit = new RateLimiter({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  maxRequests: 50, // 50 requests per 5 minutes
+  keyPrefix: 'rate_limit:image_proxy_strict'
+})
+
 // Utility function to create rate limit headers
 export function createRateLimitHeaders(result: RateLimitResult): Record<string, string> {
   const headers: Record<string, string> = {
