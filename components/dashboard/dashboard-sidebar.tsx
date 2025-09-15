@@ -47,6 +47,29 @@ export function DashboardSidebar({ onModeSelect }: DashboardSidebarProps) {
       
       <SidebarContent className="flex-1">
         <SidebarGroup>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  asChild
+                  onClick={() => window.location.href = '/dashboard'}
+                  className={selectedMode === 'home' ? 'bg-sidebar-accent' : ''}
+                >
+                  <button className="flex items-center gap-4 w-full px-4 py-6 rounded-lg">
+                    <span className="text-xl">🏠</span>
+                    <div className="flex flex-col items-start gap-1 min-w-0 flex-1">
+                      <span className="text-sm font-medium truncate w-full">Home</span>
+                      <span className="text-xs text-muted-foreground truncate w-full">View your generated images</span>
+                    </div>
+                  </button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
           <SidebarGroupLabel>Generation Modes</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-4">
@@ -83,6 +106,15 @@ export function DashboardSidebar({ onModeSelect }: DashboardSidebarProps) {
                 >
                   <Database className="h-4 w-4 mr-2" />
                   Cache Management
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => window.location.href = '/dashboard/cleanup'}
+                  className="w-full justify-start"
+                >
+                  <Database className="h-4 w-4 mr-2" />
+                  Cleanup Management
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

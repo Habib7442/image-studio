@@ -1,11 +1,11 @@
-import { HistoryPanel } from '@/components/dashboard/history-panel'
+import { CleanupManagement } from '@/components/dashboard/cleanup-management'
 
-export default function DashboardPage() {
+export default function CleanupPage() {
   return (
     <div className="flex-1 flex flex-col h-full">
-      {/* Main History Area */}
+      {/* Main Cleanup Area */}
       <div className="flex-1 p-6 overflow-y-auto">
-        <HistoryPanel />
+        <CleanupManagement />
       </div>
 
       {/* Bottom Status Bar */}
@@ -19,7 +19,7 @@ export default function DashboardPage() {
         <div className="flex items-center space-x-4">
           <span>Page 1 of 1</span>
           <span>•</span>
-          <span>AI Studio</span>
+          <span>Cleanup Management</span>
         </div>
       </div>
     </div>

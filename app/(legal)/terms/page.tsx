@@ -294,7 +294,68 @@ export default function TermsOfServicePage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold mb-4 font-display">7. Privacy and Data</h2>
+              <h2 className="text-2xl font-bold mb-4 font-display">7. Image Storage & User Control</h2>
+              <div className="space-y-4">
+                <div className="p-6 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <h3 className="font-semibold text-green-800 dark:text-green-200 mb-3">🖼️ Image Storage Policy</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mt-1">
+                        <span className="text-xs font-bold text-green-600 dark:text-green-400">1</span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-green-800 dark:text-green-200">Temporary Storage</h4>
+                        <p className="text-sm text-green-700 dark:text-green-300">
+                          Generated images are temporarily stored on our servers for up to 1 hour to allow you to download them.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mt-1">
+                        <span className="text-xs font-bold text-green-600 dark:text-green-400">2</span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-green-800 dark:text-green-200">Your Deletion Rights</h4>
+                        <p className="text-sm text-green-700 dark:text-green-300">
+                          You have full authority to delete any of your generated images at any time through our dashboard.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mt-1">
+                        <span className="text-xs font-bold text-green-600 dark:text-green-400">3</span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-green-800 dark:text-green-200">Automatic Cleanup</h4>
+                        <p className="text-sm text-green-700 dark:text-green-300">
+                          Our system automatically deletes all images after 1 hour to protect your privacy and data.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mt-1">
+                        <span className="text-xs font-bold text-green-600 dark:text-green-400">4</span>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-green-800 dark:text-green-200">Manual Cleanup</h4>
+                        <p className="text-sm text-green-700 dark:text-green-300">
+                          You can manually trigger cleanup of all your images through our Cleanup Management system.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <h3 className="font-semibold mb-2">Privacy Commitment</h3>
+                  <p className="text-sm text-muted-foreground">
+                    We never store your images permanently without your explicit consent. Your images are never used for training AI models or shared with third parties.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold mb-4 font-display">8. Privacy and Data</h2>
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   Your privacy is important to us. Please review our Privacy Policy to understand how we collect, use, and protect your information.
@@ -302,14 +363,14 @@ export default function TermsOfServicePage() {
                 <div className="p-4 bg-muted/30 rounded-lg">
                   <h3 className="font-semibold mb-2">Data Processing</h3>
                   <p className="text-sm text-muted-foreground">
-                    Images are processed by third-party AI services (Google Gemini) but are not permanently stored on our servers.
+                    Images are processed by third-party AI services (Google Gemini) and temporarily stored on our servers for up to 1 hour.
                   </p>
                 </div>
               </div>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold mb-4 font-display">8. Service Availability</h2>
+              <h2 className="text-2xl font-bold mb-4 font-display">9. Service Availability</h2>
               <div className="space-y-4">
                 <div className="p-4 border-l-4 border-yellow-400 bg-yellow-50">
                   <h3 className="font-semibold mb-2">No Guarantees</h3>
@@ -327,7 +388,7 @@ export default function TermsOfServicePage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold mb-4 font-display">9. Limitation of Liability</h2>
+              <h2 className="text-2xl font-bold mb-4 font-display">10. Limitation of Liability</h2>
               <div className="p-4 bg-red-50 border-2 border-red-200 rounded-lg">
                 <h3 className="font-semibold text-red-800 mb-2">Important Legal Notice</h3>
                 <p className="text-sm text-red-700">
@@ -337,7 +398,7 @@ export default function TermsOfServicePage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold mb-4 font-display">10. Termination</h2>
+              <h2 className="text-2xl font-bold mb-4 font-display">11. Termination</h2>
               <div className="space-y-4">
                 <div className="p-4 border-2 rounded-lg">
                   <h3 className="font-semibold mb-2">By You</h3>
@@ -355,21 +416,21 @@ export default function TermsOfServicePage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold mb-4 font-display">11. Changes to Terms</h2>
+              <h2 className="text-2xl font-bold mb-4 font-display">12. Changes to Terms</h2>
               <p className="text-sm text-muted-foreground">
                 We reserve the right to modify these terms at any time. We will notify users of significant changes via email or through the service. Your continued use of the service after changes constitutes acceptance of the new terms.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold mb-4 font-display">12. Governing Law</h2>
+              <h2 className="text-2xl font-bold mb-4 font-display">13. Governing Law</h2>
               <p className="text-sm text-muted-foreground">
                 These Terms shall be interpreted and governed by the laws of the jurisdiction in which ImageStudioLab operates, without regard to conflict of law provisions.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold mb-4 font-display">13. Contact Information</h2>
+              <h2 className="text-2xl font-bold mb-4 font-display">14. Contact Information</h2>
               <div className="p-6 bg-muted/30 rounded-lg">
                 <p className="text-sm text-muted-foreground mb-4">
                   If you have any questions about these Terms of Service, please contact us:

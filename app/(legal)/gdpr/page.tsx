@@ -289,8 +289,8 @@ export default function GDPRCompliancePage() {
                       <span className="text-xs font-bold text-primary">3</span>
                     </div>
                     <div>
-                      <h3 className="font-semibold">Images</h3>
-                      <p className="text-sm text-muted-foreground">Not permanently stored; processed and deleted immediately</p>
+                      <h3 className="font-semibold">Generated Images</h3>
+                      <p className="text-sm text-muted-foreground">Temporarily stored for up to 1 hour, then automatically deleted. You can delete them manually at any time.</p>
                     </div>
                   </div>
                 </div>
