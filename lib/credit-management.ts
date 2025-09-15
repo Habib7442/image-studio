@@ -28,7 +28,7 @@ export const deductCreditsWithRetry = async (
       console.log(`Credit deduction attempt ${attempt}/${maxRetries} for user ${userId}`)
       
       const { data: creditResult, error: creditError } = await supabase
-        .rpc('use_credit', { p_user_id: userId })
+        .rpc('use_credits', { user_uuid: userId, credits_to_use: 1 })
 
       if (creditError) {
         console.error(`Credit deduction attempt ${attempt} failed:`, creditError)
@@ -47,25 +47,21 @@ export const deductCreditsWithRetry = async (
         continue
       }
 
-      if (!creditResult || creditResult.length === 0 || !creditResult[0].success) {
-        const currentCredits = creditResult?.[0]?.credits_left ?? 0
-        const currentUsed = creditResult?.[0]?.total_credits_used ?? 0
-        
+      if (!creditResult || !creditResult.success) {
         return {
           success: false,
-          creditsLeft: currentCredits,
-          totalCreditsUsed: currentUsed,
-          error: 'Insufficient credits'
+          creditsLeft: 0,
+          totalCreditsUsed: 0,
+          error: creditResult?.error || 'Insufficient credits'
         }
       }
 
-      const updatedCredits = creditResult[0]
-      console.log(`Credits successfully deducted for user ${userId}. Remaining: ${updatedCredits.credits_left}`)
+      console.log(`Credits successfully deducted for user ${userId}. Remaining: ${creditResult.credits_remaining}`)
       
       return {
         success: true,
-        creditsLeft: updatedCredits.credits_left,
-        totalCreditsUsed: updatedCredits.total_credits_used
+        creditsLeft: creditResult.credits_remaining,
+        totalCreditsUsed: 0 // This function doesn't return total_credits_used
       }
       
     } catch (error) {
@@ -108,7 +104,12 @@ export const refundCreditsWithRetry = async (
       console.log(`Credit refund attempt ${attempt}/${maxRetries} for user ${userId}`)
       
       const { data: refundResult, error: refundError } = await supabase
-        .rpc('refund_credit', { p_user_id: userId })
+        .rpc('add_user_credits', { 
+          user_id: userId, 
+          credits: 1, 
+          transaction_type: 'refund',
+          metadata: { reason: 'generation_failed' }
+        })
 
       if (refundError) {
         console.error(`Credit refund attempt ${attempt} failed:`, refundError)
@@ -127,22 +128,21 @@ export const refundCreditsWithRetry = async (
         continue
       }
 
-      if (!refundResult || refundResult.length === 0 || !refundResult[0].success) {
+      if (!refundResult || !refundResult.success) {
         return {
           success: false,
           creditsLeft: 0,
           totalCreditsUsed: 0,
-          error: 'Failed to refund credits'
+          error: refundResult?.error || 'Failed to refund credits'
         }
       }
 
-      const updatedCredits = refundResult[0]
-      console.log(`Credits successfully refunded for user ${userId}. Remaining: ${updatedCredits.credits_left}`)
+      console.log(`Credits successfully refunded for user ${userId}. Added: ${refundResult.credits_added}`)
       
       return {
         success: true,
-        creditsLeft: updatedCredits.credits_left,
-        totalCreditsUsed: updatedCredits.total_credits_used
+        creditsLeft: refundResult.credits_after,
+        totalCreditsUsed: 0 // This function doesn't return total_credits_used
       }
       
     } catch (error) {

@@ -18,9 +18,15 @@ export function DashboardSidebar({ onModeSelect }: DashboardSidebarProps) {
   const currentModes = activeMode === 'fun' ? funGenerationModes : professionalGenerationModes
 
   const handleModeSelect = (modeId: string) => {
-    // Only allow canvas modes to be selected
-    if (modeId === 'style-myselfie' || modeId === 'canvas') {
-      const canvasMode = modeId as CanvasMode
+    // Map generation modes to canvas modes
+    if (modeId === 'style-myselfie') {
+      const canvasMode = 'style-myselfie' as CanvasMode
+      setSelectedMode(canvasMode)
+      onModeSelect?.(canvasMode)
+    } else {
+      // For other modes, we'll show a placeholder or redirect to specific pages
+      // For now, we'll just set it to canvas mode
+      const canvasMode = 'canvas' as CanvasMode
       setSelectedMode(canvasMode)
       onModeSelect?.(canvasMode)
     }

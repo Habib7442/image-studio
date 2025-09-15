@@ -16,16 +16,29 @@ export interface ProcessingOptions {
 }
 
 export class CanvasProcessor {
-  private canvas: HTMLCanvasElement
-  private ctx: CanvasRenderingContext2D
+  private canvas: HTMLCanvasElement | null = null
+  private ctx: CanvasRenderingContext2D | null = null
 
   constructor() {
-    this.canvas = document.createElement('canvas')
-    this.ctx = this.canvas.getContext('2d')!
+    // Don't create canvas in constructor to avoid SSR issues
+    // Canvas will be created lazily when needed
+  }
+
+  private ensureCanvas(): void {
+    if (typeof window === 'undefined') {
+      throw new Error('Canvas operations can only be performed in the browser')
+    }
+    
+    if (!this.canvas) {
+      this.canvas = document.createElement('canvas')
+      this.ctx = this.canvas.getContext('2d')!
+    }
   }
 
   // Load image from base64 or ImageData
   async loadImage(imageSource: string | ImageData): Promise<ImageData> {
+    this.ensureCanvas()
+    
     if (imageSource instanceof ImageData) {
       return imageSource
     }
@@ -55,10 +68,10 @@ export class CanvasProcessor {
           return
         }
         
-        this.canvas.width = img.width
-        this.canvas.height = img.height
-        this.ctx.drawImage(img, 0, 0)
-        const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
+        this.canvas!.width = img.width
+        this.canvas!.height = img.height
+        this.ctx!.drawImage(img, 0, 0)
+        const imageData = this.ctx!.getImageData(0, 0, this.canvas!.width, this.canvas!.height)
         resolve(imageData)
       }
       img.onerror = reject
@@ -68,10 +81,11 @@ export class CanvasProcessor {
 
   // Convert ImageData to base64
   imageDataToBase64(imageData: ImageData): string {
-    this.canvas.width = imageData.width
-    this.canvas.height = imageData.height
-    this.ctx.putImageData(imageData, 0, 0)
-    return this.canvas.toDataURL('image/jpeg', 0.9)
+    this.ensureCanvas()
+    this.canvas!.width = imageData.width
+    this.canvas!.height = imageData.height
+    this.ctx!.putImageData(imageData, 0, 0)
+    return this.canvas!.toDataURL('image/jpeg', 0.9)
   }
 
   // Apply motion blur effect
@@ -278,6 +292,8 @@ export class CanvasProcessor {
 
   // Apply polaroid frame
   applyPolaroidFrame(imageData: ImageData, options: ProcessingOptions): ImageData {
+    this.ensureCanvas()
+    
     const { caption = 'Polaroid', borderSize = 60 } = options
     const width = imageData.width
     const height = imageData.height
@@ -313,6 +329,8 @@ export class CanvasProcessor {
 
   // Apply film strip effect
   applyFilmStrip(imageData: ImageData, options: ProcessingOptions): ImageData {
+    this.ensureCanvas()
+    
     const { stripCount = 3, spacing = 20 } = options
     const width = imageData.width
     const height = imageData.height
@@ -334,7 +352,7 @@ export class CanvasProcessor {
       const sx = i * stripWidth
       
       newCtx.drawImage(
-        this.canvas,
+        this.canvas!,
         sx, 0, stripWidth, height,
         x, 0, stripWidth, height
       )
@@ -349,6 +367,7 @@ export class CanvasProcessor {
     effectId: string,
     options: ProcessingOptions
   ): Promise<string> {
+    this.ensureCanvas()
     const imageData = await this.loadImage(imageSource)
     let processedData: ImageData
 
@@ -385,5 +404,5 @@ export class CanvasProcessor {
   }
 }
 
-// Export singleton instance
+// Export singleton instance - safe for SSR
 export const canvasProcessor = new CanvasProcessor()

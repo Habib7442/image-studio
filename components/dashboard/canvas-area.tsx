@@ -27,62 +27,25 @@ export function CanvasArea({ activeMode = 'canvas', showGrid = false }: CanvasAr
             <StyleMySelfiePanel />
           </div>
         ) : (
-          <div className="flex items-center justify-center w-full h-full">
-            <div className="relative w-full h-full flex items-center justify-center min-w-0">
-              {/* Canvas Container */}
-              <div 
-                className={`shadow-2xl border relative overflow-hidden w-full h-full ${
-                  isDark 
-                    ? 'bg-gray-900 border-gray-700' 
-                    : 'bg-white border-gray-200'
-                }`}
-                style={{ 
-                  transform: `scale(${zoom / 100})`,
-                  transformOrigin: 'center'
-                }}
-              >
-                {/* Canvas Background Pattern */}
-                <div className="absolute inset-0 opacity-5">
-                  <div className="w-full h-full" style={{
-                    backgroundImage: `radial-gradient(circle, ${isDark ? '#fff' : '#000'} 1px, transparent 1px)`,
-                    backgroundSize: '20px 20px'
-                  }} />
+          <div className="flex items-center justify-center w-full h-full bg-gradient-to-br from-muted/5 to-muted/10">
+            <div className="text-center space-y-6 max-w-md px-6">
+              <div className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
+                <ImageIcon className="h-10 w-10 text-primary" />
+              </div>
+              
+              <div className="space-y-3">
+                <h3 className="text-2xl font-semibold">Coming Soon</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  This generation mode is currently under development. 
+                  Check back soon for exciting new features!
+                </p>
+              </div>
+              
+              <div className="pt-4">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                  In Development
                 </div>
-
-                {/* Canvas Content Area */}
-                <div className="relative w-full h-full flex items-center justify-center p-8">
-                  {/* Placeholder Content */}
-                  <div className={`text-center max-w-md ${
-                    isDark ? 'text-gray-300' : 'text-gray-400'
-                  }`}>
-                    <div className="mb-6">
-                      <ImageIcon className={`h-20 w-20 mx-auto mb-4 ${
-                        isDark ? 'text-gray-400' : 'text-gray-300'
-                      }`} />
-                      <h3 className={`text-xl font-semibold mb-3 ${
-                        isDark ? 'text-gray-200' : 'text-gray-600'
-                      }`}>Your Canvas</h3>
-                      <p className={`text-sm leading-relaxed ${
-                        isDark ? 'text-gray-400' : 'text-gray-500'
-                      }`}>
-                        Generate AI images or add elements to start creating your masterpiece
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Canvas Grid Overlay (when enabled) */}
-                {showGrid && (
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="w-full h-full" style={{
-                      backgroundImage: `
-                        linear-gradient(to right, ${isDark ? '#374151' : '#e5e7eb'} 1px, transparent 1px),
-                        linear-gradient(to bottom, ${isDark ? '#374151' : '#e5e7eb'} 1px, transparent 1px)
-                      `,
-                      backgroundSize: '20px 20px'
-                    }} />
-                  </div>
-                )}
               </div>
             </div>
           </div>
