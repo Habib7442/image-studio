@@ -79,7 +79,9 @@ export const uploadImageToStorage = async (
     .from('generated_images')
     .insert({
       user_id: userId,
-      storage_path: storagePath,
+      storage_path: filename, // Use filename instead of storagePath
+      public_url: urlData.publicUrl,
+      signed_url: signedUrlData?.signedUrl,
       prompt,
       style,
       metadata: metadata || {},

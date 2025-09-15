@@ -49,6 +49,13 @@ export const funGenerationModes: GenerationMode[] = [
     icon: '👤',
     description: 'Real-time avatar creation',
     category: 'fun'
+  },
+  {
+    id: 'editor',
+    title: 'Image Editor',
+    icon: '🎨',
+    description: 'Edit and enhance your images',
+    category: 'fun'
   }
 ];
 

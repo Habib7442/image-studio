@@ -23,6 +23,9 @@ export function DashboardSidebar({ onModeSelect }: DashboardSidebarProps) {
       const canvasMode = 'style-myselfie' as CanvasMode
       setSelectedMode(canvasMode)
       onModeSelect?.(canvasMode)
+    } else if (modeId === 'editor') {
+      // Redirect to editor page
+      window.location.href = '/editor'
     } else {
       // For other modes, we'll show a placeholder or redirect to specific pages
       // For now, we'll just set it to canvas mode

@@ -23,7 +23,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { STYLE_TEMPLATES, TEMPLATE_CATEGORIES, STYLE_TEMPLATE_CATEGORIES } from '@/lib/style-templates'
 import { useStyleMySelfieStore } from '@/store/style-myselfie-store'
-import { EffectsPanel } from './effects-panel'
+import Link from 'next/link'
 
 export function StyleMySelfiePanel() {
   const { profile } = useAuth()
@@ -156,18 +156,25 @@ export function StyleMySelfiePanel() {
 
   const handleDownload = async (imageUrl: string, index: number) => {
     try {
-      // Verify the image is still accessible
+      setError(null) // Clear any previous errors
+      
+      // Fetch the image as a blob
       const response = await fetch(imageUrl)
       if (!response.ok) {
         throw new Error('Image not accessible')
       }
       
+      const blob = await response.blob()
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = imageUrl
-      link.download = `styled-selfie-${index + 1}-${Date.now()}.jpeg`
+      link.href = url
+      link.download = `styled-selfie-${index + 1}-${Date.now()}.jpg`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
     } catch (err) {
       console.error('Failed to download image:', err)
       setError('Failed to download image. Please try again.')
@@ -505,33 +512,30 @@ export function StyleMySelfiePanel() {
                     </Card>
                   )}
 
-                  {/* Effects Panel */}
+                  {/* Editor Link */}
                   {result && (
                     <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <Wand2 className="h-5 w-5 text-purple-500" />
-                          Apply Effects
+                          Edit Your Images
                         </CardTitle>
                         <CardDescription>
-                          Enhance your generated images with creative effects like blur, filters, and frames
+                          Apply effects, filters, and enhancements to your generated images
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <EffectsPanel
-                          images={result.images.map(img => img.url)}
-                          onImageUpdate={(imageId, processedImage) => {
-                            // Update the result with processed image
-                            setResult({
-                              ...result,
-                              images: result.images.map((img, index) =>
-                                `image-${index}` === imageId 
-                                  ? { ...img, url: processedImage }
-                                  : img
-                              )
-                            })
-                          }}
-                        />
+                        <div className="text-center space-y-4">
+                          <p className="text-sm text-muted-foreground">
+                            Your images have been saved! You can now edit them with our advanced editor.
+                          </p>
+                          <Link href="/editor">
+                            <Button className="w-full">
+                              <Wand2 className="h-4 w-4 mr-2" />
+                              Open Image Editor
+                            </Button>
+                          </Link>
+                        </div>
                       </CardContent>
                     </Card>
                   )}
