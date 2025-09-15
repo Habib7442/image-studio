@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Sidebar, SidebarContent, SidebarHeader, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar'
 import { ModeToggle } from '@/components/dashboard/mode-toggle'
 import { funGenerationModes, professionalGenerationModes } from '@/lib/data'
+import { Database, Settings } from 'lucide-react'
 
 type CanvasMode = 'canvas' | 'style-myselfie'
 
@@ -66,6 +67,24 @@ export function DashboardSidebar({ onModeSelect }: DashboardSidebarProps) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* System Management */}
+        <SidebarGroup>
+          <SidebarGroupLabel>System</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => window.location.href = '/dashboard/cache'}
+                  className="w-full justify-start"
+                >
+                  <Database className="h-4 w-4 mr-2" />
+                  Cache Management
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

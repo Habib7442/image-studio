@@ -16,7 +16,8 @@ import {
   HelpCircle, 
   Sparkles,
   Moon,
-  Sun
+  Sun,
+  Palette
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { UserButton } from '@clerk/nextjs'
@@ -69,10 +70,16 @@ export function DashboardHeader() {
 
         {/* Center Section */}
         <div className="flex items-center space-x-4">
-          <Badge variant="outline" className="flex items-center gap-1">
-            <Sparkles className="h-3 w-3" />
-            AI Studio
-          </Badge>
+          {/* Image Editor */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8"
+            onClick={() => window.location.href = '/editor'}
+          >
+            <span className="text-lg mr-2">🎨</span>
+            Image Editor
+          </Button>
         </div>
 
         {/* Right Section */}
