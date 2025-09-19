@@ -1,11 +1,9 @@
-import { HistoryPanel } from '@/components/dashboard/history-panel'
-
 export default function DashboardPage() {
   return (
     <div className="flex-1 flex flex-col h-full">
-      {/* Main History Area */}
+      {/* Main Content Area */}
       <div className="flex-1 p-6 overflow-y-auto">
-        <HistoryPanel />
+        {/* Empty content area */}
       </div>
 
       {/* Bottom Status Bar */}

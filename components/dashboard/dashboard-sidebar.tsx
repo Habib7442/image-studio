@@ -1,126 +1,77 @@
 'use client'
 
-import { useState } from 'react'
-import { Sidebar, SidebarContent, SidebarHeader, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar'
-import { ModeToggle } from '@/components/dashboard/mode-toggle'
-import { funGenerationModes, professionalGenerationModes } from '@/lib/data'
-import { Database } from 'lucide-react'
-
-type CanvasMode = 'canvas' | 'style-myselfie'
+import { Button } from '@/components/ui/button'
+import { Home, Camera, Settings } from 'lucide-react'
+import { useRouter, usePathname } from 'next/navigation'
 
 interface DashboardSidebarProps {
-  onModeSelect?: (modeId: CanvasMode) => void
+  onModeSelect: (mode: string) => void
 }
 
 export function DashboardSidebar({ onModeSelect }: DashboardSidebarProps) {
-  const [activeMode, setActiveMode] = useState<'fun' | 'professional'>('fun')
-  const [selectedMode, setSelectedMode] = useState<CanvasMode | null>(null)
-
-  const currentModes = activeMode === 'fun' ? funGenerationModes : professionalGenerationModes
-
-  const handleModeSelect = (modeId: string) => {
-    // Map generation modes to canvas modes
-    if (modeId === 'style-myselfie') {
-      const canvasMode = 'style-myselfie' as CanvasMode
-      setSelectedMode(canvasMode)
-      onModeSelect?.(canvasMode)
-    } else if (modeId === 'editor') {
-      // Redirect to editor page
-      window.location.href = '/editor'
-    } else {
-      // For other modes, we'll show a placeholder or redirect to specific pages
-      // For now, we'll just set it to canvas mode
-      const canvasMode = 'canvas' as CanvasMode
-      setSelectedMode(canvasMode)
-      onModeSelect?.(canvasMode)
-    }
-  }
+  const router = useRouter()
+  const pathname = usePathname()
 
   return (
-    <Sidebar className="w-64">
-      <SidebarHeader className="p-4 border-b">
-        <ModeToggle 
-          activeMode={activeMode} 
-          onModeChange={setActiveMode} 
-        />
-      </SidebarHeader>
-      
-      <SidebarContent className="flex-1">
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild
-                  onClick={() => window.location.href = '/dashboard'}
-                  className={selectedMode === 'home' ? 'bg-sidebar-accent' : ''}
-                >
-                  <button className="flex items-center gap-4 w-full px-4 py-6 rounded-lg">
-                    <span className="text-xl">🏠</span>
-                    <div className="flex flex-col items-start gap-1 min-w-0 flex-1">
-                      <span className="text-sm font-medium truncate w-full">Home</span>
-                      <span className="text-xs text-muted-foreground truncate w-full">View your generated images</span>
-                    </div>
-                  </button>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+    <div className="w-64 h-screen border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex flex-col">
+      {/* Navigation */}
+      <div className="p-4 space-y-2 flex-1">
+        <div className="space-y-1">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            Navigation
+          </h3>
+          
+          <Button
+            variant={pathname === '/dashboard' ? "default" : "ghost"}
+            className="w-full justify-start"
+            onClick={() => onModeSelect('style-myselfie')}
+          >
+            <Home className="w-4 h-4 mr-2" />
+            <div className="text-left">
+              <div className="font-medium">Home</div>
+              <div className={`text-xs ${pathname === '/dashboard' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>View your generated images</div>
+            </div>
+          </Button>
+        </div>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Generation Modes</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-4">
-              {currentModes.map((mode) => (
-                <SidebarMenuItem key={mode.id}>
-                  <SidebarMenuButton 
-                    asChild
-                    onClick={() => handleModeSelect(mode.id)}
-                    className={selectedMode === mode.id ? 'bg-sidebar-accent' : ''}
-                  >
-                    <button className="flex items-center gap-4 w-full px-4 py-6 rounded-lg">
-                      <span className="text-xl">{mode.icon}</span>
-                      <div className="flex flex-col items-start gap-1 min-w-0 flex-1">
-                        <span className="text-sm font-medium truncate w-full">{mode.title}</span>
-                        <span className="text-xs text-muted-foreground truncate w-full">{mode.description}</span>
-                      </div>
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Style My Selfie */}
+        <div className="space-y-1">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            Style My Selfie
+          </h3>
+          
+          <Button
+            variant={pathname === '/dashboard/style-my-selfie' ? "default" : "ghost"}
+            className="w-full justify-start"
+            onClick={() => router.push('/dashboard/style-my-selfie')}
+          >
+            <Camera className="w-4 h-4 mr-2" />
+            <div className="text-left">
+              <div className="font-medium">Style My Selfie</div>
+              <div className={`text-xs ${pathname === '/dashboard/style-my-selfie' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>Transform your selfies with AI</div>
+            </div>
+          </Button>
+        </div>
 
-        {/* System Management */}
-        <SidebarGroup>
-          <SidebarGroupLabel>System</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={() => window.location.href = '/dashboard/cache'}
-                  className="w-full justify-start"
-                >
-                  <Database className="h-4 w-4 mr-2" />
-                  Cache Management
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  onClick={() => window.location.href = '/dashboard/cleanup'}
-                  className="w-full justify-start"
-                >
-                  <Database className="h-4 w-4 mr-2" />
-                  Cleanup Management
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+        {/* System */}
+        <div className="space-y-1">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            System
+          </h3>
+          
+          <Button
+            variant={pathname === '/dashboard/settings' ? "default" : "ghost"}
+            className="w-full justify-start"
+            onClick={() => router.push('/dashboard/settings')}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            <div className="text-left">
+              <div className="font-medium">Settings</div>
+              <div className={`text-xs ${pathname === '/dashboard/settings' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>Manage your account</div>
+            </div>
+          </Button>
+        </div>
+      </div>
+    </div>
   )
 }

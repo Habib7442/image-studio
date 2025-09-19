@@ -8,7 +8,7 @@ import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { CanvasArea } from '@/components/dashboard/canvas-area'
 
-type CanvasMode = 'canvas' | 'style-myselfie'
+type CanvasMode = 'style-myselfie'
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   // children renders nested route content alongside CanvasArea
@@ -60,17 +60,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="h-screen w-screen flex flex-col bg-background">
-        {/* Header */}
-        <DashboardHeader />
-        
-        {/* Main Content */}
-        <div className="flex flex-1 overflow-hidden w-full min-w-0">
-          {/* Left Sidebar */}
+      <div className="h-screen w-screen flex bg-background">
+        {/* Left Sidebar */}
+        <div className="flex-shrink-0">
           <DashboardSidebar onModeSelect={setSelectedMode} />
+        </div>
+        
+        {/* Right Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          {/* Header */}
+          <DashboardHeader />
           
-          {/* Center Content Area - Full Width */}
-          <main className="flex-1 flex flex-col overflow-y-auto w-full min-w-0">
+          {/* Main Content */}
+          <main className="flex-1 overflow-y-auto">
             {selectedMode ? (
               <CanvasArea activeMode={selectedMode} />
             ) : (
