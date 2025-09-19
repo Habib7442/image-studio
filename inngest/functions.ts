@@ -16,10 +16,13 @@ export const generateStyledSelfie = inngest.createFunction(
     const { userId, prompt, requestId } = event.data;
     
     // Retrieve the image from the store
+    console.log(`Looking for image with requestId: ${requestId}`);
     const selfieImage = imageStoreService.get(requestId);
     if (!selfieImage) {
+      console.error(`Image not found for requestId: ${requestId}`);
       throw new Error('Selfie image not found in store');
     }
+    console.log(`Found image for requestId: ${requestId}, size: ${selfieImage.length}`);
 
     try {
       // Step 1: Validate user credits
@@ -234,8 +237,14 @@ Make it look natural, high-quality, and perfect for Instagram feed. Use vertical
         });
       });
 
-      // Step 5: Send completion event
+      // Step 5: Send completion event (without large image data)
       await step.run("update-progress-complete", async () => {
+        // Store the result in the image store instead of passing through step
+        imageStoreService.set(`${requestId}_result`, JSON.stringify({
+          images: variations,
+          creditsLeft: updatedCredits
+        }));
+        
         await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/style-my-selfie/progress`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -247,7 +256,7 @@ Make it look natural, high-quality, and perfect for Instagram feed. Use vertical
             message: "Your styled selfies are ready!",
             status: "completed",
             result: {
-              images: variations,
+              // Don't include images here to avoid size limit
               creditsLeft: updatedCredits
             }
           })
@@ -259,7 +268,7 @@ Make it look natural, high-quality, and perfect for Instagram feed. Use vertical
 
       return {
         success: true,
-        images: variations,
+        // Don't return large image data to avoid size limits
         creditsLeft: updatedCredits
       };
 

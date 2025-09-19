@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Settings, HelpCircle, User } from 'lucide-react'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
@@ -12,8 +13,9 @@ export function DashboardHeader() {
 
   return (
     <header className="h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-6">
-      {/* Left side - Empty */}
+      {/* Left side - Sidebar Toggle */}
       <div className="flex items-center space-x-4">
+        <SidebarTrigger />
       </div>
 
 

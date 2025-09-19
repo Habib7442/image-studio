@@ -1,12 +1,14 @@
-import { serve } from "inngest/next";
-import { inngest } from "@/inngest/client";
-import { generateStyledSelfie, deductCredits } from "@/inngest/functions";
+// Inngest API - DISABLED
+// This API is disabled but kept for future use if needed
 
-// Create an API that serves Inngest functions
-export const { GET, POST, PUT } = serve({
-  client: inngest,
-  functions: [
-    generateStyledSelfie,
-    deductCredits,
-  ],
-});
+export async function GET() {
+  return new Response('Inngest API disabled', { status: 503 });
+}
+
+export async function POST() {
+  return new Response('Inngest API disabled', { status: 503 });
+}
+
+export async function PUT() {
+  return new Response('Inngest API disabled', { status: 503 });
+}

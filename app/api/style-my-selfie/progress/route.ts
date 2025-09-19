@@ -61,13 +61,34 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // If completed, try to get images from the image store
+    let result = progress.result;
+    if (progress.status === 'completed' && !result?.images) {
+      try {
+        const { imageStoreService } = await import('@/lib/image-store');
+        const storedResult = imageStoreService.get(`${progress.requestId}_result`);
+        if (storedResult) {
+          const parsedResult = JSON.parse(storedResult);
+          result = {
+            ...result,
+            images: parsedResult.images,
+            creditsLeft: parsedResult.creditsLeft
+          };
+          // Clean up the stored result
+          imageStoreService.delete(`${progress.requestId}_result`);
+        }
+      } catch (error) {
+        console.error('Error retrieving stored result:', error);
+      }
+    }
+
     return NextResponse.json({
       requestId: progress.requestId,
       progress: progress.progress,
       step: progress.step,
       message: progress.message,
       status: progress.status,
-      result: progress.result,
+      result: result,
       error: progress.error
     });
 
@@ -83,6 +104,15 @@ export async function GET(request: NextRequest) {
 // Webhook endpoint for Inngest to update progress
 export async function POST(request: NextRequest) {
   try {
+    // Basic security check - ensure request is from localhost (Inngest dev server)
+    // In production, you'd validate Inngest's webhook signature
+    const origin = request.headers.get('origin') || request.headers.get('referer');
+    const isLocalhost = origin?.includes('localhost') || origin?.includes('127.0.0.1');
+    
+    if (!isLocalhost && process.env.NODE_ENV === 'development') {
+      return NextResponse.json({ error: 'Unauthorized origin' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { requestId, userId, progress, step, message, status, result, error } = body;
 

@@ -42,12 +42,12 @@ export function HistoryPanel() {
       {/* Privacy Notice */}
       <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
         <h3 className="font-semibold text-red-800 dark:text-red-200 mb-2">Privacy & Data Control</h3>
-        <p className="text-sm text-red-700 dark:text-red-300">
-          We care about your privacy! You can delete your photos anytime from our servers. 
+            <p className="text-sm text-red-700 dark:text-red-300">
+              We care about your privacy! You can delete your photos anytime from our servers. 
           We also have Cleanup Management that automatically removes images after 1 hour to protect your data. 
           You can also manually trigger cleanup of all images from the Cleanup Management page. 
-          Your images are never stored permanently without your consent.
-        </p>
+              Your images are never stored permanently without your consent.
+            </p>
       </div>
 
       {/* Images Grid */}
@@ -56,7 +56,7 @@ export function HistoryPanel() {
           <Card key={image.id} className="overflow-hidden">
             <div className="aspect-square bg-muted flex items-center justify-center">
               <Camera className="w-12 h-12 text-muted-foreground" />
-            </div>
+                </div>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">{image.title}</CardTitle>
               <CardDescription className="text-xs">{image.timestamp}</CardDescription>
@@ -69,7 +69,7 @@ export function HistoryPanel() {
                 </Button>
                 <Button size="sm" variant="destructive">
                   <Trash2 className="w-3 h-3" />
-                </Button>
+                    </Button>
               </div>
             </CardContent>
           </Card>

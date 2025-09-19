@@ -8,7 +8,9 @@ const isPublicRoute = createRouteMatcher([
   '/api/public(.*)',
   '/_next(.*)',
   '/static(.*)',
-  '/api/inngest(.*)'
+  '/api/inngest(.*)', // Disabled but kept for future use
+  '/api/style-my-selfie/progress' // Allow progress updates
+  // /api/style-my-selfie/generate - PROTECTED (requires authentication)
 ])
 
 export default clerkMiddleware(

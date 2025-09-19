@@ -37,7 +37,7 @@ export function useAuth() {
   }, [isLoaded, isSignedIn, userId])
 
   const fetchUserProfile = async () => {
-    if (!userId) return
+    if (!userId) return Promise.resolve()
 
     setIsProfileLoading(true)
     setProfileError(null)
@@ -59,15 +59,17 @@ export function useAuth() {
     } catch (error) {
       console.error('Error fetching user profile:', error)
       setProfileError(error instanceof Error ? error.message : 'Unknown error')
+      throw error // Re-throw to make it a proper Promise rejection
     } finally {
       setIsProfileLoading(false)
     }
   }
 
-  const refreshProfile = () => {
+  const refreshProfile = async () => {
     if (userId) {
-      fetchUserProfile()
+      return fetchUserProfile()
     }
+    return Promise.resolve()
   }
 
   return {

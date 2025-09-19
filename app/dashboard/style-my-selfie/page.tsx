@@ -1,48 +1,43 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { 
   Camera, 
-  Upload, 
   Sparkles, 
   Download, 
-  Check,
   AlertCircle,
   Clock,
-  Zap,
   Image as ImageIcon,
-  User,
-  Trash2,
   AlertTriangle
 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { StyleSelection } from '@/components/ui/style-selection'
+import { type StyleTemplate } from '@/lib/style-templates'
+import { type FilterEffect } from '@/lib/filter-effects'
 
 export default function StyleMySelfiePage() {
-  const { user, profile, isAuthenticated, isLoading, refreshProfile } = useAuth()
-  const router = useRouter()
+  const { profile, isSignedIn, isProfileLoading, refreshProfile } = useAuth()
   
   // Form state
   const [prompt, setPrompt] = useState('')
   const [selfieImage, setSelfieImage] = useState<string | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<StyleTemplate | null>(null)
+  const [selectedFilters, setSelectedFilters] = useState<FilterEffect[]>([])
   
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<TempImage[]>([])
   const [error, setError] = useState<string | null>(null)
   const [showErrorDialog, setShowErrorDialog] = useState(false)
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [copiedId] = useState<string | null>(null)
   const [generationProgress, setGenerationProgress] = useState(0)
-  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null)
-  const [progressMessage, setProgressMessage] = useState('')
   
   // Temporary image interface
   interface TempImage {
@@ -54,99 +49,12 @@ export default function StyleMySelfiePage() {
   
   // File input refs
   const selfieInputRef = useRef<HTMLInputElement>(null)
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      // Clear progress interval on unmount
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-        progressIntervalRef.current = null
-      }
-    }
-  }, [])
-
-  // Poll progress updates
-  const pollProgress = async (requestId: string) => {
-    try {
-      const response = await fetch(`/api/style-my-selfie/progress?requestId=${requestId}`)
-      const data = await response.json()
-      
-      if (data.error) {
-        console.error('Progress polling error:', data.error)
-        return
-      }
-
-      setGenerationProgress(data.progress)
-      setProgressMessage(data.message)
-
-      if (data.status === 'completed' && data.result) {
-        // Generation completed successfully
-        const timestamp = Date.now()
-        const tempImages: TempImage[] = data.result.images.map((imageData: string, index: number) => ({
-          id: `temp-${timestamp}-${index}`,
-          src: imageData,
-          prompt: prompt,
-          generatedAt: new Date().toISOString()
-        }))
-
-        setGeneratedImages(prev => [...tempImages, ...prev])
-        setIsGenerating(false)
-        setCurrentRequestId(null)
-        
-        // Clear form
-        setPrompt('')
-        setSelfieImage(null)
-        if (selfieInputRef.current) selfieInputRef.current.value = ''
-
-        // Refresh profile to get updated credits
-        if (refreshProfile) {
-          refreshProfile().catch(console.error)
-        }
-
-        // Clear progress interval
-        if (progressIntervalRef.current) {
-          clearInterval(progressIntervalRef.current)
-          progressIntervalRef.current = null
-        }
-
-        // Show success notification
-        const successNotification = document.createElement('div')
-        successNotification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50'
-        successNotification.innerHTML = `
-          <div class="flex items-center">
-            <div class="w-4 h-4 mr-2">✅</div>
-            <div>
-              <div class="font-bold">Generation Complete!</div>
-              <div class="text-sm">Your styled selfies are ready</div>
-            </div>
-          </div>
-        `
-        document.body.appendChild(successNotification)
-        
-        setTimeout(() => {
-          if (successNotification.parentNode) {
-            successNotification.parentNode.removeChild(successNotification)
-          }
-        }, 5000)
-
-      } else if (data.status === 'failed') {
-        // Generation failed
-        setError(data.error || 'Generation failed')
-        setShowErrorDialog(true)
-        setIsGenerating(false)
-        setCurrentRequestId(null)
-        
-        // Clear progress interval
-        if (progressIntervalRef.current) {
-          clearInterval(progressIntervalRef.current)
-          progressIntervalRef.current = null
-        }
-      }
-    } catch (error) {
-      console.error('Progress polling error:', error)
-    }
+  // Handle style selection changes
+  const handleStyleChange = (newPrompt: string, template?: StyleTemplate, filters?: FilterEffect[]) => {
+    setPrompt(newPrompt)
+    setSelectedTemplate(template || null)
+    setSelectedFilters(filters || [])
   }
 
   // Handle file upload
@@ -186,7 +94,7 @@ export default function StyleMySelfiePage() {
     }
 
     // Check if user has credits
-    if (isAuthenticated && profile && profile.credits_left <= 0) {
+    if (isSignedIn && profile && profile.credits_left <= 0) {
       setError('No credits remaining. Credits reset daily.')
       return
     }
@@ -199,9 +107,23 @@ export default function StyleMySelfiePage() {
     setIsGenerating(true)
     setError(null)
     setGenerationProgress(0)
-    setProgressMessage('Starting generation...')
+
+    // Declare progress interval outside try block for cleanup
+    let progressInterval: NodeJS.Timeout | undefined
 
     try {
+      // Create AbortController for timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 120000) // 120 second timeout
+      
+      // Simulate progress to show user that generation is happening
+      progressInterval = setInterval(() => {
+        setGenerationProgress(prev => {
+          if (prev >= 90) return prev // Don't go to 100% until we get the response
+          return prev + Math.random() * 10
+        })
+      }, 2000)
+
       const response = await fetch('/api/style-my-selfie/generate', {
         method: 'POST',
         headers: {
@@ -210,49 +132,118 @@ export default function StyleMySelfiePage() {
         body: JSON.stringify({
           prompt: prompt.trim(),
           selfieImage,
+          template: selectedTemplate,
+          filters: selectedFilters,
         }),
+        signal: controller.signal,
       })
+
+      clearTimeout(timeoutId)
+      clearInterval(progressInterval) // Clear progress simulation
 
       if (!response.ok) {
         const errorText = await response.text()
         console.error('API Error Response:', errorText)
         
+        // Try to parse the error message from the response
         try {
           const errorData = JSON.parse(errorText)
           if (errorData.error) {
             throw new Error(errorData.error)
           }
-        } catch (parseError) {
+        } catch {
+          // If parsing fails, use the raw error text or fallback
           throw new Error(errorText || `HTTP error! status: ${response.status}`)
         }
         
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text()
+        console.error('Non-JSON response:', text)
+        throw new Error(text || 'Server returned non-JSON response')
+      }
+
       const data = await response.json()
 
       if (data.error) {
-        setError(data.error || 'Failed to start generation')
+        // Handle specific error types with better user messaging
+        if (data.errorType === 'QUOTA_EXCEEDED') {
+          setError('🚫 Daily quota exceeded! You\'ve reached the free tier limit. Please try again tomorrow or consider upgrading your plan.')
+        } else if (data.errorType === 'RATE_LIMITED') {
+          setError('⏳ Too many requests! Please wait a few minutes before trying again.')
+        } else {
+          setError(data.error || 'Failed to generate images')
+        }
         setShowErrorDialog(true)
-        setIsGenerating(false)
         return
       }
 
-      // Start polling for progress updates
-      if (data.requestId) {
-        setCurrentRequestId(data.requestId)
-        progressIntervalRef.current = setInterval(() => {
-          pollProgress(data.requestId)
-        }, 2000) // Poll every 2 seconds
+      // Create temporary images for immediate display (NO STORAGE)
+      const timestamp = Date.now()
+      const tempImages: TempImage[] = data.images.map((imageData: string, index: number) => ({
+        id: `temp-${timestamp}-${index}`,
+        src: imageData, // Direct base64 data
+        prompt: data.prompt,
+        generatedAt: data.generatedAt
+      }))
+
+      console.log(`Received ${data.images.length} images from API - showing immediately`)
+
+      // Show images immediately
+      const updatedImages = [...tempImages, ...generatedImages]
+      setGeneratedImages(updatedImages)
+
+      // Show download warning notification
+      const warningNotification = document.createElement('div')
+      warningNotification.className = 'fixed top-4 right-4 bg-orange-500 text-white px-4 py-2 rounded-lg shadow-lg z-50'
+      warningNotification.innerHTML = `
+        <div class="flex items-center">
+          <div class="w-4 h-4 mr-2">⚠️</div>
+          <div>
+            <div class="font-bold">Download Now!</div>
+            <div class="text-sm">Images will be lost on page refresh</div>
+          </div>
+        </div>
+      `
+      document.body.appendChild(warningNotification)
+      
+      // Remove notification after 5 seconds
+      setTimeout(() => {
+        if (warningNotification.parentNode) {
+          warningNotification.parentNode.removeChild(warningNotification)
+        }
+      }, 5000)
+
+      // Reset generating state immediately after success
+      setIsGenerating(false)
+
+      // Clear form immediately
+      setPrompt('')
+      setSelfieImage(null)
+      if (selfieInputRef.current) selfieInputRef.current.value = ''
+
+      // Refresh profile to get updated credits (async, don't await)
+      if (refreshProfile) {
+        refreshProfile().catch(console.error)
       } else {
-        throw new Error('No request ID received')
+        console.warn('refreshProfile function not available')
       }
 
     } catch (error) {
       console.error('Generation error:', error)
       
+      // Clear progress interval on error
+      if (progressInterval) {
+        clearInterval(progressInterval)
+      }
+      
       if (error instanceof Error) {
-        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        if (error.name === 'AbortError') {
+          setError('Generation is taking longer than expected. Please try again with a simpler prompt or check your internet connection.')
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
           setError('Network error. Please check your internet connection and try again.')
         } else if (error.message.includes('HTTP error! status: 429')) {
           setError('Too many requests. Please wait a moment before trying again.')
@@ -269,7 +260,9 @@ export default function StyleMySelfiePage() {
         setError('An unexpected error occurred. Please try again.')
       }
       setShowErrorDialog(true)
+    } finally {
       setIsGenerating(false)
+      setGenerationProgress(100) // Complete progress bar
     }
   }
 
@@ -288,7 +281,7 @@ export default function StyleMySelfiePage() {
     }
   }
 
-  if (isLoading) {
+  if (isProfileLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -354,9 +347,11 @@ export default function StyleMySelfiePage() {
                 />
                 {selfieImage && (
                   <div className="w-16 h-16 rounded-lg border-2 border-primary overflow-hidden flex-shrink-0">
-                    <img 
+                    <Image 
                       src={selfieImage} 
                       alt="Selfie preview" 
+                      width={64}
+                      height={64}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -364,29 +359,20 @@ export default function StyleMySelfiePage() {
               </div>
             </div>
 
-            {/* Prompt Input */}
-            <div>
-              <Label htmlFor="prompt" className="text-sm font-medium mb-2 block">
-                Describe Your Vision
-              </Label>
-              
-              <Textarea
-                id="prompt"
-                placeholder="e.g., Professional headshot in a modern office, wearing a blue suit, natural lighting..."
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="min-h-[100px] w-full resize-none"
-                maxLength={1000}
-              />
-              <div className="text-xs text-muted-foreground mt-1">
-                {prompt.length}/1000 characters
-              </div>
-              
-              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-xs text-blue-700 leading-relaxed">
-                  <strong>Instagram Optimized:</strong> All images are generated in 1080x1350 pixels (4:5 aspect ratio) perfect for Instagram portrait posts. 
-                  High-quality AI-generated images optimized for Instagram.
-                </p>
+            {/* Style Selection */}
+            <StyleSelection onStyleChange={handleStyleChange} />
+
+            {/* Instagram Optimization Info */}
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <span className="text-blue-500 text-lg">📱</span>
+                <div>
+                  <h4 className="text-blue-700 dark:text-blue-300 font-medium text-sm">Instagram Optimized</h4>
+                  <p className="text-blue-600 dark:text-blue-400 text-xs mt-1">
+                    All images are generated in 1080×1350 pixels (4:5 aspect ratio) perfect for Instagram portrait posts. 
+                    High-quality AI-generated images optimized for Instagram.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -403,7 +389,7 @@ export default function StyleMySelfiePage() {
               onClick={handleGenerate}
               disabled={
                 isGenerating || 
-                (isAuthenticated && profile && profile.credits_left <= 0) ||
+                (isSignedIn && profile && profile.credits_left <= 0) ||
                 !prompt.trim() ||
                 !selfieImage
               }
@@ -418,7 +404,7 @@ export default function StyleMySelfiePage() {
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Generate 3 Variations {isAuthenticated && profile && `(1 credit)`}
+                  Generate 3 Variations {isSignedIn && profile && `(1 credit)`}
                 </>
               )}
             </Button>
@@ -427,7 +413,7 @@ export default function StyleMySelfiePage() {
             {isGenerating && (
               <div className="w-full space-y-2">
                 <div className="flex justify-between text-sm text-gray-600">
-                  <span>{progressMessage || 'Generating variations...'}</span>
+                  <span>Generating variations...</span>
                   <span>{Math.round(generationProgress)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
@@ -450,7 +436,7 @@ export default function StyleMySelfiePage() {
               </p>
               <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded-lg">
                 <p className="text-xs text-orange-700 font-medium">
-                  ⚠️ Images are temporary - download them now or they'll be lost on page refresh!
+                  ⚠️ Images are temporary - download them now or they&apos;ll be lost on page refresh!
                 </p>
               </div>
               {isGenerating && (
@@ -487,9 +473,11 @@ export default function StyleMySelfiePage() {
                 {generatedImages.map((image) => (
                   <Card key={image.id} className="border shadow-lg overflow-hidden group">
                     <div className="relative">
-                      <img 
+                      <Image 
                         src={image.src} 
                         alt="Generated styled selfie" 
+                        width={400}
+                        height={500}
                         className="w-full h-auto object-contain"
                       />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">

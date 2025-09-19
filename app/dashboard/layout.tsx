@@ -6,15 +6,11 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
-import { CanvasArea } from '@/components/dashboard/canvas-area'
-
-type CanvasMode = 'style-myselfie'
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  // children renders nested route content alongside CanvasArea
+  // children renders nested route content
   const { isLoaded, isSignedIn, isProfileLoading, profileError } = useAuth()
   const router = useRouter()
-  const [selectedMode, setSelectedMode] = useState<CanvasMode | undefined>(undefined)
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -62,9 +58,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <SidebarProvider>
       <div className="h-screen w-screen flex bg-background">
         {/* Left Sidebar */}
-        <div className="flex-shrink-0">
-          <DashboardSidebar onModeSelect={setSelectedMode} />
-        </div>
+        <DashboardSidebar />
         
         {/* Right Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
@@ -73,11 +67,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           
           {/* Main Content */}
           <main className="flex-1 overflow-y-auto">
-            {selectedMode ? (
-              <CanvasArea activeMode={selectedMode} />
-            ) : (
-              children
-            )}
+            {children}
           </main>
         </div>
       </div>
