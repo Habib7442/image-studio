@@ -65,7 +65,7 @@ export default function CookiePolicyPage() {
               <Shield className="w-12 h-12 text-primary mx-auto" />
               <h3 className="text-lg font-bold">No Tracking</h3>
               <p className="text-sm text-muted-foreground">
-                We don't use tracking cookies or third-party analytics.
+                We don&apos;t use tracking cookies or third-party analytics.
               </p>
             </div>
           </div>
@@ -175,8 +175,8 @@ export default function CookiePolicyPage() {
                       <Eye className="w-4 h-4 text-purple-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-purple-800">What We DON'T Use</h3>
-                      <p className="text-sm text-purple-700">We respect your privacy and don't track you</p>
+                      <h3 className="text-lg font-bold text-purple-800">What We DON&apos;T Use</h3>
+                      <p className="text-sm text-purple-700">We respect your privacy and don&apos;t track you</p>
                     </div>
                   </div>
                   
@@ -288,7 +288,7 @@ export default function CookiePolicyPage() {
                   <div className="p-4 border-2 rounded-lg">
                     <h3 className="font-semibold mb-2">Google Gemini AI</h3>
                     <p className="text-sm text-muted-foreground mb-2">
-                      We use Google's Gemini AI for image generation. Google may set cookies for API functionality.
+                      We use Google&apos;s Gemini AI for image generation. Google may set cookies for API functionality.
                     </p>
                     <p className="text-xs text-muted-foreground">
                       <strong>Privacy Policy:</strong> <a href="https://policies.google.com/privacy" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">https://policies.google.com/privacy</a>
@@ -301,7 +301,7 @@ export default function CookiePolicyPage() {
             <section>
               <h2 className="text-2xl font-bold mb-4 font-display">Updates to This Policy</h2>
               <p className="text-sm text-muted-foreground">
-                We may update this Cookie Policy from time to time to reflect changes in our practices or for other operational, legal, or regulatory reasons. We will notify you of any material changes by posting the new policy on this page and updating the "Last updated" date.
+                We may update this Cookie Policy from time to time to reflect changes in our practices or for other operational, legal, or regulatory reasons. We will notify you of any material changes by posting the new policy on this page and updating the &quot;Last updated&quot; date.
               </p>
             </section>
 
