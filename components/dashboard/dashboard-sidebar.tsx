@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Home, Camera, Settings, Palette } from 'lucide-react'
+import { Home, Camera, Settings, Palette, Package } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 import {
   Sidebar,
@@ -63,6 +63,18 @@ export function DashboardSidebar() {
                   <a href="#">
                     <Camera className="w-4 h-4" />
                     <span>Style My Selfie</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  asChild
+                  isActive={pathname === '/dashboard/add-me-product'}
+                  onClick={() => router.push('/dashboard/add-me-product')}
+                >
+                  <a href="#">
+                    <Package className="w-4 h-4" />
+                    <span>Add Me + Product</span>
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>

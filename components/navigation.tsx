@@ -62,15 +62,15 @@ export function Navigation() {
               <DropdownMenuContent align="center">
                 <DropdownMenuItem>
                   <Sparkles className="w-4 h-4 mr-2" />
-                  AI Photoshoot
+                  Style My Selfie
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Gaming Photoshoot
+                  Add Me + Product
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Avatar Studio
+                  AI Editor
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -85,11 +85,6 @@ export function Navigation() {
 
           {/* Right side actions */}
           <div className="flex items-center space-x-4">
-            {/* Credits display */}
-            <Badge variant="secondary" className="hidden sm:flex">
-              <Sparkles className="w-3 h-3 mr-1" />
-              5 Credits
-            </Badge>
 
             {/* Theme toggle */}
             <Button
@@ -161,11 +156,6 @@ export function Navigation() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="px-4 py-4 space-y-4">
-              <div className="flex items-center justify-between px-3 py-2 bg-muted/50 rounded-lg">
-                <span className="text-sm font-medium">Credits</span>
-                <Badge variant="secondary">5 left</Badge>
-              </div>
-              
               <nav className="space-y-2">
                 <Link 
                   href="/about" 
