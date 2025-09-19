@@ -8,6 +8,10 @@ const isPublicRoute = createRouteMatcher([
   '/api/public(.*)',
   '/_next(.*)',
   '/static(.*)',
+  '/privacy',
+  '/terms',
+  '/cookie-policy',
+  '/gdpr',
   '/api/inngest(.*)', // Disabled but kept for future use
   '/api/style-my-selfie/progress' // Allow progress updates
   // /api/style-my-selfie/generate - PROTECTED (requires authentication)

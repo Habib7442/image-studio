@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { createClient } from '@/lib/supabase'
+import { createServiceRoleClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const supabase = createClient()
+    const supabase = createServiceRoleClient()
     
     const { data: history, error } = await supabase
       .from('image_edit_history')
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const supabase = createClient()
+    const supabase = createServiceRoleClient()
     
     const { data, error } = await supabase
       .from('image_edit_history')
@@ -88,7 +88,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'History ID required' }, { status: 400 })
     }
 
-    const supabase = createClient()
+    const supabase = createServiceRoleClient()
     
     const { error } = await supabase
       .from('image_edit_history')

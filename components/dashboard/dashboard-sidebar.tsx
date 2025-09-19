@@ -1,7 +1,8 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Home, Camera, Settings, Palette, Package } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Home, Camera, Settings, Palette, Package, ShoppingCart, Flame } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 import {
   Sidebar,
@@ -49,6 +50,32 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* Trending */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Trending</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  asChild
+                  isActive={pathname === '/dashboard/trending'}
+                  onClick={() => router.push('/dashboard/trending')}
+                >
+                  <a href="#" className="flex items-center justify-between w-full">
+                    <div className="flex items-center">
+                      <Flame className="w-4 h-4" />
+                      <span>Trending</span>
+                    </div>
+                    <Badge className="bg-red-500 text-white border-0 text-xs px-1.5 py-0.5">
+                      HOT
+                    </Badge>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {/* AI Tools */}
         <SidebarGroup>
           <SidebarGroupLabel>AI Tools</SidebarGroupLabel>
@@ -75,6 +102,18 @@ export function DashboardSidebar() {
                   <a href="#">
                     <Package className="w-4 h-4" />
                     <span>Add Me + Product</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  asChild
+                  isActive={pathname === '/dashboard/ecommerce-enhancement'}
+                  onClick={() => router.push('/dashboard/ecommerce-enhancement')}
+                >
+                  <a href="#">
+                    <ShoppingCart className="w-4 h-4" />
+                    <span>E-commerce Enhancement</span>
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -1,9 +1,11 @@
+import { GeneratedImagesSection } from '@/components/generated-images-section'
+
 export default function DashboardPage() {
   return (
     <div className="flex-1 flex flex-col h-full">
       {/* Main Content Area */}
-      <div className="flex-1 p-6 overflow-y-auto">
-        {/* Empty content area */}
+      <div className="flex-1 overflow-y-auto">
+        <GeneratedImagesSection />
       </div>
 
       {/* Bottom Status Bar */}

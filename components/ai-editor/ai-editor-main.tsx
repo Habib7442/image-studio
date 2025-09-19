@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
 import { useImageEditorStore } from '@/store/image-editor-store'
 import {
@@ -19,39 +20,35 @@ import {
   Sparkles,
   Upload,
   Download,
-  Undo,
-  Redo,
-  Trash2,
 } from 'lucide-react'
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 
 export function AIEditorMain() {
-  const { profile, isAuthenticated, refreshProfile } = useAuth()
+  const { profile, isSignedIn, refreshProfile } = useAuth()
   const {
     currentImage,
-    activeTool,
     settings,
     isGenerating,
     generationProgress,
     error,
     setCurrentImage,
-    setActiveTool,
-    updateSettings,
     setIsGenerating,
     setGenerationProgress,
     setError,
     loadImage,
     addAIEdit,
-    aiEdits,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
   } = useImageEditorStore()
 
   const [prompt, setPrompt] = useState('')
   const [showErrorDialog, setShowErrorDialog] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [editHistory, setEditHistory] = useState<Array<{
+    id: string;
+    prompt: string;
+    timestamp: Date;
+    imageUrl: string;
+  }>>([])
+  const [isFollowUp, setIsFollowUp] = useState(false)
 
   // File input refs
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -59,7 +56,7 @@ export function AIEditorMain() {
   // Load history from Supabase on mount
   useEffect(() => {
     const loadHistory = async () => {
-      if (isAuthenticated) {
+      if (isSignedIn) {
         try {
           const response = await fetch('/api/ai-editor/history')
           if (response.ok) {
@@ -74,7 +71,7 @@ export function AIEditorMain() {
     }
 
     loadHistory()
-  }, [isAuthenticated])
+  }, [isSignedIn])
 
   // Handle file upload
   const handleFileUpload = (file: File) => {
@@ -97,7 +94,7 @@ export function AIEditorMain() {
   }
 
   // Handle AI generation
-  const handleAIGenerate = async (toolId: string) => {
+  const handleAIGenerate = async (toolId: string, isFollowUpEdit = false) => {
     if (!currentImage) {
       setError('Please upload an image first')
       setShowErrorDialog(true)
@@ -111,7 +108,7 @@ export function AIEditorMain() {
     }
 
     // Check if user has credits
-    if (isAuthenticated && profile && profile.credits_left <= 0) {
+    if (isSignedIn && profile && profile.credits_left <= 0) {
       setError('No credits remaining. Credits reset daily.')
       setShowErrorDialog(true)
       return
@@ -125,6 +122,7 @@ export function AIEditorMain() {
     setIsGenerating(true)
     setError(null)
     setGenerationProgress(0)
+    setIsFollowUp(isFollowUpEdit)
 
     // Declare progress interval outside try block for cleanup
     let progressInterval: NodeJS.Timeout | undefined
@@ -136,7 +134,7 @@ export function AIEditorMain() {
 
       // Simulate progress to show user that generation is happening
       progressInterval = setInterval(() => {
-        setGenerationProgress(prev => {
+        setGenerationProgress((prev) => {
           if (prev >= 90) return prev // Don't go to 100% until we get the response
           return prev + Math.random() * 10
         })
@@ -210,38 +208,20 @@ export function AIEditorMain() {
         result: data.result,
       })
 
+      // Add to edit history
+      const editEntry = {
+        id: `edit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        prompt: prompt.trim(),
+        timestamp: new Date(),
+        imageUrl: data.result,
+      }
+      setEditHistory(prev => [...prev, editEntry])
+
       // Update current image with result
       setCurrentImage({
         ...currentImage,
         src: data.result,
       })
-
-      // Save to history in Supabase
-      if (isAuthenticated && currentImage) {
-        try {
-          await fetch('/api/ai-editor/history', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              originalImageUrl: currentImage.src,
-              editedImageUrl: data.result,
-              prompt: prompt.trim(),
-              metadata: {
-                tool: activeTool || 'ai-enhance',
-                strength: settings.aiStrength,
-                model: 'gemini-2.5-flash',
-                quality: settings.quality,
-                format: settings.format,
-              }
-            }),
-          })
-        } catch (error) {
-          console.error('Failed to save to history:', error)
-          // Don't show error to user as this is not critical
-        }
-      }
 
       // Reset generating state immediately after success
       setIsGenerating(false)
@@ -339,7 +319,7 @@ export function AIEditorMain() {
         <div className="text-center mb-8 space-y-4">
           <div className="flex items-center justify-center space-x-2">
             <div className="w-10 h-10 relative">
-              <img
+              <Image
                 src="/logo.png?v=2"
                 alt="ImageStudioLab Logo"
                 width={40}
@@ -352,15 +332,16 @@ export function AIEditorMain() {
             </h1>
           </div>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            The world's most powerful AI-powered image editor. Better than Photoshop and Lightroom.
+            The world&apos;s most powerful AI-powered image editor. Better than Photoshop and Lightroom.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="w-full">
           {/* Main Content Area */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6">
             {/* Image Upload/Display */}
-            <Card>
+            <div className="flex justify-center items-center min-h-[60vh]">
+              <Card className="w-full max-w-4xl">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Camera className="w-5 h-5 mr-2" />
@@ -374,9 +355,11 @@ export function AIEditorMain() {
                 {currentImage ? (
                   <div className="space-y-4">
                     <div className="relative group">
-                      <img
+                      <Image
                         src={currentImage.src}
                         alt="Current image"
+                        width={800}
+                        height={600}
                         className="w-full h-auto max-h-96 object-contain rounded-lg border"
                       />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg flex items-center justify-center">
@@ -428,19 +411,24 @@ export function AIEditorMain() {
                   </div>
                 )}
               </CardContent>
-            </Card>
+              </Card>
+            </div>
 
 
             {/* AI Prompt and Generation */}
             {currentImage && (
-              <Card>
+              <div className="flex justify-center">
+                <Card className="w-full max-w-4xl">
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Sparkles className="w-5 h-5 mr-2" />
-                    AI Editing
+                    {editHistory.length === 0 ? 'AI Editing' : 'Initial Edit'}
                   </CardTitle>
                   <CardDescription>
-                    Describe how you want to edit your image
+                    {editHistory.length === 0 
+                      ? 'Describe how you want to edit your image' 
+                      : 'Make your first edit to get started with follow-up prompts'
+                    }
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -459,9 +447,9 @@ export function AIEditorMain() {
                     <div className="mt-2 text-xs text-muted-foreground">
                       💡 <strong>Tips for better results:</strong>
                       <ul className="mt-1 space-y-1 ml-4">
-                        <li>• Be specific about style: "professional", "modern", "vintage"</li>
-                        <li>• Mention lighting: "dramatic lighting", "soft natural light"</li>
-                        <li>• Specify background: "clean white background", "studio setting"</li>
+                        <li>• Be specific about style: &quot;professional&quot;, &quot;modern&quot;, &quot;vintage&quot;</li>
+                        <li>• Mention lighting: &quot;dramatic lighting&quot;, &quot;soft natural light&quot;</li>
+                        <li>• Specify background: &quot;clean white background&quot;, &quot;studio setting&quot;</li>
                         <li>• Avoid complex requests that might confuse the AI</li>
                       </ul>
                       <div className="mt-2">
@@ -495,23 +483,23 @@ export function AIEditorMain() {
                         AI Enhance
                       </Badge>
                       <span className="text-sm text-muted-foreground">
-                        {isAuthenticated && profile && `(${profile.credits_left} credits left)`}
+                        {isSignedIn && profile && `(${profile.credits_left} credits left)`}
                       </span>
                     </div>
                     <Button
-                      onClick={() => handleAIGenerate('ai-enhance')}
+                      onClick={() => handleAIGenerate('ai-enhance', false)}
                       disabled={isGenerating || !prompt.trim()}
                       className="flex items-center"
                     >
                       {isGenerating ? (
                         <>
                           <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
-                          Generating...
+                          {isFollowUp ? 'Refining...' : 'Generating...'}
                         </>
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 mr-2" />
-                          Generate
+                          {editHistory.length === 0 ? 'Generate' : 'Make Edit'}
                         </>
                       )}
                     </Button>
@@ -533,99 +521,12 @@ export function AIEditorMain() {
                         </div>
                       )}
                 </CardContent>
-              </Card>
+                </Card>
+              </div>
             )}
           </div>
 
-          {/* Right Sidebar - History */}
-          <div className="lg:col-span-1 space-y-4">
-            {/* History */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center">
-                  <Undo className="w-5 h-5 mr-2" />
-                  Edit History
-                </CardTitle>
-                <CardDescription>
-                  Your recent AI edits
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex space-x-2 mb-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={undo}
-                    disabled={!canUndo}
-                    className="flex-1"
-                  >
-                    <Undo className="w-4 h-4 mr-1" />
-                    Undo
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={redo}
-                    disabled={!canRedo}
-                    className="flex-1"
-                  >
-                    <Redo className="w-4 h-4 mr-1" />
-                    Redo
-                  </Button>
-                </div>
-                
-                {/* History Items */}
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {aiEdits.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      No edits yet. Start editing to see your history here.
-                    </p>
-                  ) : (
-                    aiEdits.map((edit, index) => (
-                      <div
-                        key={edit.id}
-                        className="flex items-center space-x-2 p-2 border rounded hover:bg-muted/50 cursor-pointer"
-                        onClick={() => {
-                          if (currentImage) {
-                            setCurrentImage({
-                              ...currentImage,
-                              src: edit.result,
-                            })
-                          }
-                        }}
-                      >
-                        <div className="w-8 h-8 rounded border overflow-hidden flex-shrink-0">
-                          <img
-                            src={edit.result}
-                            alt={`Edit ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium truncate">
-                            {edit.prompt}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(edit.createdAt).toLocaleTimeString()}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            // Add delete functionality here if needed
-                          }}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+       
         </div>
 
         {/* Error Dialog */}

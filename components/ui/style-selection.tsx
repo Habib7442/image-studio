@@ -3,8 +3,6 @@
 import { useState, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
 import { X } from 'lucide-react'
 import { 
   getTrendingTemplates, 
@@ -25,9 +23,7 @@ interface StyleSelectionProps {
 export function StyleSelection({ onStyleChange, className }: StyleSelectionProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<StyleTemplate | null>(null)
   const [selectedFilters, setSelectedFilters] = useState<FilterEffect[]>([])
-  const [customPrompt, setCustomPrompt] = useState('')
-  const [activeTab, setActiveTab] = useState<'templates' | 'filters' | 'custom'>('templates')
-  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [activeTab, setActiveTab] = useState<'templates' | 'filters'>('templates')
 
   // Get trending templates and filters
   const trendingTemplates = getTrendingTemplates().slice(0, 6)
@@ -35,8 +31,8 @@ export function StyleSelection({ onStyleChange, className }: StyleSelectionProps
 
   const handleTemplateSelect = useCallback((template: StyleTemplate) => {
     setSelectedTemplate(template)
-    generateFinalPrompt(template, selectedFilters, customPrompt)
-  }, [selectedFilters, customPrompt])
+    generateFinalPrompt(template, selectedFilters)
+  }, [selectedFilters])
 
   const handleFilterToggle = useCallback((filter: FilterEffect) => {
     const newFilters = selectedFilters.some(f => f.id === filter.id)
@@ -44,29 +40,15 @@ export function StyleSelection({ onStyleChange, className }: StyleSelectionProps
       : [...selectedFilters, filter]
     
     setSelectedFilters(newFilters)
-    generateFinalPrompt(selectedTemplate, newFilters, customPrompt)
-  }, [selectedTemplate, customPrompt])
+    generateFinalPrompt(selectedTemplate, newFilters)
+  }, [selectedTemplate])
 
-  const handleCustomPromptChange = useCallback((value: string) => {
-    setCustomPrompt(value)
-    generateFinalPrompt(selectedTemplate, selectedFilters, value)
-  }, [selectedTemplate, selectedFilters])
-
-  const generateFinalPrompt = (template: StyleTemplate | null, filters: FilterEffect[], custom: string) => {
+  const generateFinalPrompt = (template: StyleTemplate | null, filters: FilterEffect[]) => {
     let finalPrompt = ''
 
     // Start with template prompt if selected
     if (template) {
       finalPrompt = template.prompt
-    }
-
-    // Add custom text if provided
-    if (custom.trim()) {
-      if (finalPrompt) {
-        finalPrompt += ` ${custom.trim()}`
-      } else {
-        finalPrompt = custom.trim()
-      }
     }
 
     // Add filter effects to prompt
@@ -87,14 +69,14 @@ export function StyleSelection({ onStyleChange, className }: StyleSelectionProps
 
 
   // Check if any option is selected
-  const hasAnySelection = selectedTemplate || selectedFilters.length > 0 || customPrompt.trim().length > 0
+  const hasAnySelection = selectedTemplate || selectedFilters.length > 0
 
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Style Selection Cards */}
       <div className="space-y-4">
         <h3 className="text-sm font-medium">Choose Your Style</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <Card 
             className={`cursor-pointer transition-all hover:shadow-md ${
               activeTab === 'templates' 
@@ -125,20 +107,6 @@ export function StyleSelection({ onStyleChange, className }: StyleSelectionProps
             </CardContent>
           </Card>
           
-          <Card 
-            className={`cursor-pointer transition-all hover:shadow-md ${
-              activeTab === 'custom' 
-                ? 'ring-2 ring-primary bg-primary/5' 
-                : 'hover:bg-muted/50'
-            }`}
-            onClick={() => setActiveTab('custom')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl mb-2">✏️</div>
-              <div className="text-sm font-medium">Custom</div>
-              <div className="text-xs text-muted-foreground mt-1">Write your own</div>
-            </CardContent>
-          </Card>
         </div>
       </div>
 
@@ -160,84 +128,6 @@ export function StyleSelection({ onStyleChange, className }: StyleSelectionProps
         />
       )}
 
-      {/* Custom Tab */}
-      {activeTab === 'custom' && (
-        <div className="space-y-4">
-          <div>
-            <Label className="block text-sm font-medium mb-2">
-              Describe Your Vision <span className="text-muted-foreground text-xs">(Optional)</span>
-            </Label>
-            <Textarea
-              value={customPrompt}
-              onChange={(e) => handleCustomPromptChange(e.target.value)}
-              placeholder="e.g., Professional headshot in a modern office, wearing a blue suit, natural lighting..."
-              className="w-full h-24 p-3 border border-input rounded-md text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none"
-              maxLength={1000}
-            />
-            <div className="flex justify-between items-center mt-2">
-              <span className="text-xs text-muted-foreground">
-                {customPrompt.length}/1000 characters
-              </span>
-              <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="text-xs text-primary hover:text-primary/80"
-              >
-                {showAdvanced ? 'Hide' : 'Show'} Advanced Options
-              </button>
-            </div>
-          </div>
-
-          {/* Advanced Options */}
-          {showAdvanced && (
-            <div className="bg-muted rounded-lg p-4 space-y-4">
-              <h4 className="text-sm font-medium">Advanced Options</h4>
-              
-              {/* Template Selection */}
-              <div>
-                <Label className="block text-sm font-medium mb-2">
-                  Base Template (Optional)
-                </Label>
-                <select
-                  value={selectedTemplate?.id || ''}
-                  onChange={(e) => {
-                    const template = trendingTemplates.find(t => t.id === e.target.value)
-                    setSelectedTemplate(template || null)
-                    generateFinalPrompt(template || null, selectedFilters, customPrompt)
-                  }}
-                  className="w-full p-2 border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="">No template (Custom only)</option>
-                  {trendingTemplates.map(template => (
-                    <option key={template.id} value={template.id}>
-                      {template.emoji} {template.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Filter Selection */}
-              <div>
-                <Label className="block text-sm font-medium mb-2">
-                  Additional Filters (Optional)
-                </Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {trendingFilters.slice(0, 6).map((filter) => (
-                    <label key={filter.id} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={selectedFilters.some(f => f.id === filter.id)}
-                        onChange={() => handleFilterToggle(filter)}
-                        className="rounded border-input"
-                      />
-                      <span>{filter.emoji} {filter.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Selected Items Preview */}
       {hasAnySelection && (
@@ -272,14 +162,6 @@ export function StyleSelection({ onStyleChange, className }: StyleSelectionProps
                 ))}
               </div>
             )}
-            {customPrompt.trim() && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Custom Text:</span>
-                <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                  &ldquo;{customPrompt.trim().substring(0, 50)}{customPrompt.trim().length > 50 ? '...' : ''}&rdquo;
-                </span>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -292,7 +174,7 @@ export function StyleSelection({ onStyleChange, className }: StyleSelectionProps
             <div>
               <h4 className="text-orange-700 dark:text-orange-300 font-medium text-sm">Choose Your Style</h4>
               <p className="text-orange-600 dark:text-orange-400 text-xs mt-1">
-                Select a template, add filters, or write custom text to enable generation.
+                Select a template or add filters to enable generation.
               </p>
             </div>
           </div>

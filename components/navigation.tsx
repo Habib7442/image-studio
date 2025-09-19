@@ -48,40 +48,11 @@ export function Navigation() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          {/* <nav className="hidden md:flex items-center space-x-8">
             <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               About Us
             </Link>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-sm font-medium">
-                  Features
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center">
-                <DropdownMenuItem>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Style My Selfie
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Add Me + Product
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  AI Editor
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Link href="/gallery" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Gallery
-            </Link>
-            <Link href="/pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Pricing
-            </Link>
-          </nav>
+          </nav> */}
 
           {/* Right side actions */}
           <div className="flex items-center space-x-4">
@@ -156,7 +127,7 @@ export function Navigation() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="px-4 py-4 space-y-4">
-              <nav className="space-y-2">
+              {/* <nav className="space-y-2">
                 <Link 
                   href="/about" 
                   className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -164,21 +135,7 @@ export function Navigation() {
                 >
                   About Us
                 </Link>
-                <Link 
-                  href="/gallery" 
-                  className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Gallery
-                </Link>
-                <Link 
-                  href="/pricing" 
-                  className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Pricing
-                </Link>
-              </nav>
+              </nav> */}
 
               <div className="space-y-2 pt-4 border-t">
                 {isLoaded ? (
