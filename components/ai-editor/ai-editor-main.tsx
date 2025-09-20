@@ -62,9 +62,9 @@ export function AIEditorMain() {
         try {
           const response = await fetch('/api/ai-editor/history')
           if (response.ok) {
-            const data = await response.json()
+            await response.json()
             // You could add a function to load history into the store if needed
-            console.log('Loaded history:', data.history)
+            // console.log('Loaded history:', data.history)
           }
         } catch (error) {
           console.error('Failed to load history:', error)
@@ -104,10 +104,15 @@ export function AIEditorMain() {
         console.log('Image compressed successfully')
       }
 
-      // Create a new File object from the compressed data URL
-      const response = await fetch(dataUrl)
-      const blob = await response.blob()
-      const compressedFile = new File([blob], file.name, { type: 'image/jpeg' })
+      // Convert data URL to File object without using fetch
+      const base64Data = dataUrl.split(',')[1]
+      const byteCharacters = atob(base64Data)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
+      }
+      const byteArray = new Uint8Array(byteNumbers)
+      const compressedFile = new File([byteArray], file.name, { type: 'image/jpeg' })
 
       await loadImage(compressedFile)
     } catch (error) {
@@ -159,11 +164,11 @@ export function AIEditorMain() {
       const timeoutId = setTimeout(() => controller.abort(), 120000) // 120 second timeout
 
       // Simulate progress to show user that generation is happening
+      let currentProgress = 0
       progressInterval = setInterval(() => {
-        setGenerationProgress((prev) => {
-          if (prev >= 90) return prev // Don't go to 100% until we get the response
-          return prev + Math.random() * 10
-        })
+        if (currentProgress >= 90) return // Don't go to 100% until we get the response
+        currentProgress = Math.min(currentProgress + Math.random() * 10, 90)
+        setGenerationProgress(currentProgress)
       }, 2000)
 
       const response = await fetch('/api/ai-editor/generate', {
@@ -196,7 +201,7 @@ export function AIEditorMain() {
           if (errorData.error) {
             throw new Error(errorData.error)
           }
-        } catch (parseError) {
+        } catch {
           // If parsing fails, use the raw error text or fallback
           throw new Error(errorText || `HTTP error! status: ${response.status}`)
         }
@@ -550,12 +555,12 @@ export function AIEditorMain() {
                         <div className="w-full space-y-2">
                           <div className="flex justify-between text-sm text-gray-600">
                             <span>Generating AI edit...</span>
-                            <span>{Math.round(generationProgress)}%</span>
+                            <span>{Math.round(typeof generationProgress === 'number' ? generationProgress : 0)}%</span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
                               className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
-                              style={{ width: `${generationProgress}%` }}
+                              style={{ width: `${typeof generationProgress === 'number' ? generationProgress : 0}%` }}
                             />
                           </div>
                         </div>
