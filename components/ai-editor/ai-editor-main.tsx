@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
 import { useImageEditorStore } from '@/store/image-editor-store'
+import { compressImageWithFallback } from '@/lib/image-compression'
 import {
   Card,
   CardContent,
@@ -49,6 +50,7 @@ export function AIEditorMain() {
     imageUrl: string;
   }>>([])
   const [isFollowUp, setIsFollowUp] = useState(false)
+  const [isCompressing, setIsCompressing] = useState(false)
 
   // File input refs
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -74,7 +76,7 @@ export function AIEditorMain() {
   }, [isSignedIn])
 
   // Handle file upload
-  const handleFileUpload = (file: File) => {
+  const handleFileUpload = async (file: File) => {
     if (!file) return
 
     // Basic file validation
@@ -86,11 +88,35 @@ export function AIEditorMain() {
       return
     }
 
-    loadImage(file).catch((error) => {
-      console.error('Error loading image:', error)
-      setError('Failed to load image.')
+    setIsCompressing(true)
+    setError(null)
+
+    try {
+      // Compress the image
+      const { dataUrl, wasCompressed, error: compressionError } = await compressImageWithFallback(file)
+      
+      if (compressionError) {
+        console.warn('Image compression warning:', compressionError)
+        // Continue with original file if compression fails
+      }
+
+      if (wasCompressed) {
+        console.log('Image compressed successfully')
+      }
+
+      // Create a new File object from the compressed data URL
+      const response = await fetch(dataUrl)
+      const blob = await response.blob()
+      const compressedFile = new File([blob], file.name, { type: 'image/jpeg' })
+
+      await loadImage(compressedFile)
+    } catch (error) {
+      console.error('Error processing image:', error)
+      setError('Failed to process image.')
       setShowErrorDialog(true)
-    })
+    } finally {
+      setIsCompressing(false)
+    }
   }
 
   // Handle AI generation
@@ -392,12 +418,25 @@ export function AIEditorMain() {
                   </div>
                 ) : (
                   <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                    <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-lg font-medium mb-2">Upload an image to get started</p>
-                    <p className="text-muted-foreground mb-4">Drag and drop or click to browse</p>
-                    <Button onClick={() => fileInputRef.current?.click()}>
-                      Choose File
-                    </Button>
+                    {isCompressing ? (
+                      <div className="space-y-4">
+                        <div className="w-12 h-12 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                        <p className="text-lg font-medium">Compressing image...</p>
+                        <p className="text-muted-foreground">Please wait while we optimize your image</p>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                        <p className="text-lg font-medium mb-2">Upload an image to get started</p>
+                        <p className="text-muted-foreground mb-4">Drag and drop or click to browse</p>
+                        <Button 
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isCompressing}
+                        >
+                          Choose File
+                        </Button>
+                      </>
+                    )}
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -407,6 +446,7 @@ export function AIEditorMain() {
                         if (file) handleFileUpload(file)
                       }}
                       className="hidden"
+                      disabled={isCompressing}
                     />
                   </div>
                 )}

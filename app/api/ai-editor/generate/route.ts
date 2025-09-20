@@ -71,34 +71,43 @@ function getUserIdentifier(request: NextRequest, userId?: string): string {
 function enhanceUserPrompt(userPrompt: string, tool: string): string {
   const baseInstructions = `You are a professional image editor. Edit the provided image according to the user's request while following these critical guidelines:
 
+CRITICAL EDITING PRINCIPLES:
+- ONLY change what the user specifically requests - do not modify anything else
+- If user asks to change background, ONLY change the background and keep everything else identical
+- If user asks to change lighting, ONLY adjust lighting and keep everything else identical  
+- If user asks to change colors, ONLY modify colors and keep everything else identical
+- If user asks to remove something, ONLY remove that specific item and keep everything else identical
+- If user asks to add something, ONLY add that specific item and keep everything else identical
+- Preserve the original person's identity, facial features, and natural appearance exactly
+- Maintain the exact same composition, pose, and positioning unless specifically requested to change
+- Keep all other elements (clothing, objects, settings) exactly as they are unless specifically mentioned
+
 SAFETY & QUALITY GUIDELINES:
-- Maintain the original person's identity, facial features, and natural appearance
 - Preserve the subject's integrity and avoid creating duplicate body parts
 - Ensure realistic proportions and natural human anatomy
-- Keep the composition balanced and visually appealing
 - Maintain professional quality and high resolution
 - Avoid any inappropriate or harmful content
 - Ensure the result looks natural and professionally edited
 
 TECHNICAL REQUIREMENTS:
 - Use professional photography techniques
-- Maintain proper lighting and shadows
-- Ensure color accuracy and natural skin tones
+- Maintain proper lighting and shadows (unless specifically changing them)
+- Ensure color accuracy and natural skin tones (unless specifically changing them)
 - Keep the image sharp and well-composed
 - Maintain the original aspect ratio unless specifically requested to change it
 
 USER REQUEST: "${userPrompt}"
 
-Please edit the image to fulfill the user's request while strictly following all the above guidelines. The result should look like it was professionally edited by an expert photographer and retoucher.`;
+IMPORTANT: Only make the specific changes requested by the user. Do not add, remove, or modify anything else. The result should look like a precise, professional edit that only addresses the user's specific request.`;
 
   // Add tool-specific enhancements
   const toolEnhancements = {
-    'ai-enhance': `Focus on enhancing the overall quality, lighting, colors, and sharpness while maintaining the original composition.`,
-    'ai-remove-bg': `Remove or replace the background while keeping the main subject perfectly intact with clean edges.`,
-    'ai-style': `Apply the requested style transformation while maintaining the subject's natural appearance and realistic proportions.`,
-    'ai-upscale': `Increase resolution while enhancing details and maintaining natural appearance.`,
-    'ai-colorize': `Add or enhance colors while keeping them natural and realistic.`,
-    'ai-restore': `Remove imperfections while preserving the original content and natural appearance.`
+    'ai-enhance': `Focus ONLY on enhancing the specific aspects mentioned in the user's request. Do not change anything else.`,
+    'ai-remove-bg': `Remove or replace ONLY the background while keeping the main subject perfectly intact with clean edges. Do not modify the subject.`,
+    'ai-style': `Apply ONLY the specific style transformation requested by the user. Do not change anything else.`,
+    'ai-upscale': `Increase resolution while enhancing details. Do not change colors, composition, or other elements unless specifically requested.`,
+    'ai-colorize': `Add or enhance ONLY the colors mentioned in the user's request. Do not change other elements.`,
+    'ai-restore': `Remove ONLY the specific imperfections mentioned by the user. Do not change anything else.`
   };
 
   const toolEnhancement = toolEnhancements[tool as keyof typeof toolEnhancements] || '';
