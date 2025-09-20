@@ -95,9 +95,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse request body
-    const body = await request.json()
+    // Parse request body with size validation
+    let body
+    try {
+      body = await request.json()
+    } catch (error) {
+      console.error('Failed to parse request body:', error)
+      return NextResponse.json(
+        { error: 'Request payload too large. Please compress your images and try again.' },
+        { status: 413 }
+      )
+    }
+    
     const { prompt, selfieImage, productImage, template, filters, adTemplate } = body
+    
+    // Check payload size
+    const payloadSize = JSON.stringify(body).length
+    const maxPayloadSize = 4 * 1024 * 1024 // 4MB limit
+    if (payloadSize > maxPayloadSize) {
+      console.error(`Payload too large: ${payloadSize} bytes (max: ${maxPayloadSize})`)
+      return NextResponse.json(
+        { error: 'Request payload too large. Please use smaller images (under 2MB each) and try again.' },
+        { status: 413 }
+      )
+    }
 
     // Validate required fields
     if (!selfieImage || !productImage) {

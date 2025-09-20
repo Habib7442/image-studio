@@ -39,6 +39,7 @@ export default function AddMeProductPage() {
   
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isCompressing, setIsCompressing] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<TempImage[]>([])
   const [error, setError] = useState<string | null>(null)
   const [showErrorDialog, setShowErrorDialog] = useState(false)
@@ -77,8 +78,36 @@ export default function AddMeProductPage() {
     // The template selector will handle the random selection
   }
 
+  // Compress image to reduce payload size
+  const compressImage = (file: File, maxWidth: number = 1024, quality: number = 0.8): Promise<string> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')!
+      const img = new Image()
+      
+      img.onload = () => {
+        // Calculate new dimensions
+        let { width, height } = img
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width
+          width = maxWidth
+        }
+        
+        canvas.width = width
+        canvas.height = height
+        
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, width, height)
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality)
+        resolve(compressedDataUrl)
+      }
+      
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
   // Handle file upload
-  const handleFileUpload = (file: File, type: 'selfie' | 'product') => {
+  const handleFileUpload = async (file: File, type: 'selfie' | 'product') => {
     if (!file) return
     
     // Basic file validation
@@ -92,17 +121,24 @@ export default function AddMeProductPage() {
       return
     }
     
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const result = e.target?.result as string
-      if (type === 'selfie') {
-        setSelfieImage(result)
-      } else {
-        setProductImage(result)
-      }
+    try {
+      setIsCompressing(true)
       setError(null)
+      
+      // Compress image to reduce payload size
+      const compressedImage = await compressImage(file, 1024, 0.8)
+      
+      if (type === 'selfie') {
+        setSelfieImage(compressedImage)
+      } else {
+        setProductImage(compressedImage)
+      }
+    } catch (error) {
+      console.error('Image compression failed:', error)
+      setError('Failed to process image. Please try again.')
+    } finally {
+      setIsCompressing(false)
     }
-    reader.readAsDataURL(file)
   }
 
   // Generate images
@@ -375,8 +411,15 @@ export default function AddMeProductPage() {
                       if (file) handleFileUpload(file, 'selfie')
                     }}
                     className="flex-1 w-full"
+                    disabled={isCompressing}
                   />
-                  {selfieImage && (
+                  {isCompressing && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                      Compressing...
+                    </div>
+                  )}
+                  {selfieImage && !isCompressing && (
                     <div className="w-16 h-16 rounded-lg border-2 border-primary overflow-hidden flex-shrink-0">
                       <Image 
                         src={selfieImage} 
@@ -406,8 +449,15 @@ export default function AddMeProductPage() {
                       if (file) handleFileUpload(file, 'product')
                     }}
                     className="flex-1 w-full"
+                    disabled={isCompressing}
                   />
-                  {productImage && (
+                  {isCompressing && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                      Compressing...
+                    </div>
+                  )}
+                  {productImage && !isCompressing && (
                     <div className="w-16 h-16 rounded-lg border-2 border-primary overflow-hidden flex-shrink-0">
                       <Image 
                         src={productImage} 
