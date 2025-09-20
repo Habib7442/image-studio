@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Home, Camera, Settings, Palette, Package, ShoppingCart, Flame } from 'lucide-react'
+import { Home, Camera, Settings, Palette, Package, ShoppingCart, Flame, Shirt } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 import {
   Sidebar,
@@ -102,6 +102,18 @@ export function DashboardSidebar() {
                   <a href="#">
                     <Package className="w-4 h-4" />
                     <span>Add Me + Product</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  asChild
+                  isActive={pathname === '/dashboard/virtual-try-on'}
+                  onClick={() => router.push('/dashboard/virtual-try-on')}
+                >
+                  <a href="#">
+                    <Shirt className="w-4 h-4" />
+                    <span>Virtual Try-On</span>
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { compressImageWithFallback } from '@/lib/image-compression';
 import {
   Card,
   CardContent,
@@ -47,6 +48,7 @@ export default function EcommerceEnhancementPage() {
     useState<EcommerceTemplate | null>(null);
   const [customPrompt, setCustomPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -74,30 +76,66 @@ export default function EcommerceEnhancementPage() {
   };
 
   const handleProductImageUpload = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setProductImage(e.target?.result as string);
+        try {
+          setIsCompressing(true);
           setError(null);
-        };
-        reader.readAsDataURL(file);
+          
+          // Compress image to reduce payload size
+          const { dataUrl, wasCompressed, error: compressionError } = await compressImageWithFallback(file);
+          
+          setProductImage(dataUrl);
+          
+          // Show warning if compression failed
+          if (!wasCompressed && compressionError) {
+            console.warn('Compression failed:', compressionError);
+          }
+        } catch (error) {
+          console.error('Image processing failed:', error);
+          // Fallback to original file
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setProductImage(e.target?.result as string);
+          };
+          reader.readAsDataURL(file);
+        } finally {
+          setIsCompressing(false);
+        }
       }
     },
     []
   );
 
   const handleLifestyleImageUpload = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setLifestyleImage(e.target?.result as string);
+        try {
+          setIsCompressing(true);
           setError(null);
-        };
-        reader.readAsDataURL(file);
+          
+          // Compress image to reduce payload size
+          const { dataUrl, wasCompressed, error: compressionError } = await compressImageWithFallback(file);
+          
+          setLifestyleImage(dataUrl);
+          
+          // Show warning if compression failed
+          if (!wasCompressed && compressionError) {
+            console.warn('Compression failed:', compressionError);
+          }
+        } catch (error) {
+          console.error('Image processing failed:', error);
+          // Fallback to original file
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setLifestyleImage(e.target?.result as string);
+          };
+          reader.readAsDataURL(file);
+        } finally {
+          setIsCompressing(false);
+        }
       }
     },
     []

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Upload, Camera, Download, Eye, Sparkles, Flame } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { StyleSelection } from '@/components/ui/style-selection'
+import { compressImageWithFallback } from '@/lib/image-compression'
 import Image from 'next/image'
 
 export default function HugChildhoodPage() {
@@ -18,26 +19,51 @@ export default function HugChildhoodPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
   const [selectedFilters, setSelectedFilters] = useState<any[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isCompressing, setIsCompressing] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [generationProgress, setGenerationProgress] = useState(0)
 
   const currentImageRef = useRef<HTMLInputElement>(null)
   const childhoodImageRef = useRef<HTMLInputElement>(null)
 
-  const handleImageUpload = (file: File, type: 'current' | 'childhood') => {
+  const handleImageUpload = async (file: File, type: 'current' | 'childhood') => {
     if (!file) return
 
-    const reader = new FileReader()
-    reader.onload = (e) => {
+    try {
+      setIsCompressing(true)
+      
+      // Compress image to reduce payload size
+      const { dataUrl, wasCompressed, error: compressionError } = await compressImageWithFallback(file)
+      
       if (type === 'current') {
         setCurrentImage(file)
-        setCurrentImagePreview(e.target?.result as string)
+        setCurrentImagePreview(dataUrl)
       } else {
         setChildhoodImage(file)
-        setChildhoodImagePreview(e.target?.result as string)
+        setChildhoodImagePreview(dataUrl)
       }
+      
+      // Show warning if compression failed
+      if (!wasCompressed && compressionError) {
+        console.warn('Compression failed:', compressionError)
+      }
+    } catch (error) {
+      console.error('Image processing failed:', error)
+      // Fallback to original file
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        if (type === 'current') {
+          setCurrentImage(file)
+          setCurrentImagePreview(e.target?.result as string)
+        } else {
+          setChildhoodImage(file)
+          setChildhoodImagePreview(e.target?.result as string)
+        }
+      }
+      reader.readAsDataURL(file)
+    } finally {
+      setIsCompressing(false)
     }
-    reader.readAsDataURL(file)
   }
 
   const handleGenerate = async () => {

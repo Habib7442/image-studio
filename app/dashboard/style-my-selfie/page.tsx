@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
+import { compressImageWithFallback } from '@/lib/image-compression'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -33,6 +34,7 @@ export default function StyleMySelfiePage() {
   
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isCompressing, setIsCompressing] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<TempImage[]>([])
   const [error, setError] = useState<string | null>(null)
   const [showErrorDialog, setShowErrorDialog] = useState(false)
@@ -58,7 +60,7 @@ export default function StyleMySelfiePage() {
   }
 
   // Handle file upload
-  const handleFileUpload = (file: File) => {
+  const handleFileUpload = async (file: File) => {
     if (!file) return
     
     // Basic file validation
@@ -72,13 +74,25 @@ export default function StyleMySelfiePage() {
       return
     }
     
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const result = e.target?.result as string
-      setSelfieImage(result)
+    try {
+      setIsCompressing(true)
       setError(null)
+      
+      // Compress image to reduce payload size
+      const { dataUrl, wasCompressed, error: compressionError } = await compressImageWithFallback(file)
+      
+      setSelfieImage(dataUrl)
+      
+      // Show warning if compression failed
+      if (!wasCompressed && compressionError) {
+        setError(compressionError)
+      }
+    } catch (error) {
+      console.error('Image processing failed:', error)
+      setError('Failed to process image. Please try a smaller file.')
+    } finally {
+      setIsCompressing(false)
     }
-    reader.readAsDataURL(file)
   }
 
   // Generate images
@@ -344,8 +358,15 @@ export default function StyleMySelfiePage() {
                     if (file) handleFileUpload(file)
                   }}
                   className="flex-1 w-full"
+                  disabled={isCompressing}
                 />
-                {selfieImage && (
+                {isCompressing && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    Compressing...
+                  </div>
+                )}
+                {selfieImage && !isCompressing && (
                   <div className="w-16 h-16 rounded-lg border-2 border-primary overflow-hidden flex-shrink-0">
                     <Image 
                       src={selfieImage} 
@@ -360,7 +381,7 @@ export default function StyleMySelfiePage() {
             </div>
 
             {/* Style Selection */}
-            <StyleSelection onStyleChange={handleStyleChange} />
+            <StyleSelection onStyleChange={handleStyleChange} showCustom={true} />
 
             {/* Instagram Optimization Info */}
             <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
