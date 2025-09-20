@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
+import imageCompression from 'browser-image-compression'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -78,32 +79,30 @@ export default function AddMeProductPage() {
     // The template selector will handle the random selection
   }
 
-  // Compress image to reduce payload size
-  const compressImage = (file: File, maxWidth: number = 1024, quality: number = 0.8): Promise<string> => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')!
-      const img = new Image()
-      
-      img.onload = () => {
-        // Calculate new dimensions
-        let { width, height } = img
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width
-          width = maxWidth
-        }
-        
-        canvas.width = width
-        canvas.height = height
-        
-        // Draw and compress
-        ctx.drawImage(img, 0, 0, width, height)
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality)
-        resolve(compressedDataUrl)
+  // Compress image using browser-image-compression library
+  const compressImage = async (file: File): Promise<string> => {
+    try {
+      const options = {
+        maxSizeMB: 1, // Maximum file size in MB
+        maxWidthOrHeight: 1024, // Maximum width or height
+        useWebWorker: true, // Use web worker for better performance
+        fileType: 'image/jpeg', // Output file type
+        initialQuality: 0.8, // Initial quality (0-1)
       }
+
+      const compressedFile = await imageCompression(file, options)
       
-      img.src = URL.createObjectURL(file)
-    })
+      // Convert compressed file to base64 data URL
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = () => reject(new Error('Failed to read compressed file'))
+        reader.readAsDataURL(compressedFile)
+      })
+    } catch (error) {
+      console.error('Image compression failed:', error)
+      throw new Error('Failed to compress image')
+    }
   }
 
   // Handle file upload
@@ -126,7 +125,7 @@ export default function AddMeProductPage() {
       setError(null)
       
       // Compress image to reduce payload size
-      const compressedImage = await compressImage(file, 1024, 0.8)
+      const compressedImage = await compressImage(file)
       
       if (type === 'selfie') {
         setSelfieImage(compressedImage)
@@ -135,7 +134,24 @@ export default function AddMeProductPage() {
       }
     } catch (error) {
       console.error('Image compression failed:', error)
-      setError('Failed to process image. Please try again.')
+      
+      // Fallback: try with original file if compression fails
+      try {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          const result = e.target?.result as string
+          if (type === 'selfie') {
+            setSelfieImage(result)
+          } else {
+            setProductImage(result)
+          }
+          setError('Image compression failed, using original. File may be too large for generation.')
+        }
+        reader.readAsDataURL(file)
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError)
+        setError('Failed to process image. Please try a smaller file.')
+      }
     } finally {
       setIsCompressing(false)
     }
